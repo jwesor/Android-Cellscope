@@ -25,7 +25,7 @@ public class TrackedField implements RealtimeImageProcessor {
 	private Mat currentField;
 	private Mat nextFrame;
 	private Point center;
-	private int radius; //radius squared
+	private int radius;
 	private List<TrackedObject> objects;
 	private List<Long> times;
 	private long startTime, nextTime;
@@ -171,6 +171,7 @@ public class TrackedField implements RealtimeImageProcessor {
 		}
 	}
 	
+	//Check to see if multiple TrackedObjects are tracking the same object, and remove them
 	private void resolveIssues() {
 		int size = objects.size();
 		for (int i = 0; i < size; i ++) {
@@ -203,6 +204,7 @@ public class TrackedField implements RealtimeImageProcessor {
 		}
 	}
 	
+	//Mark all objects as updated
 	private void confirmUpdate() {
 		for (TrackedObject o: objects) {
 			if (o.followed() && !o.isDisabled())

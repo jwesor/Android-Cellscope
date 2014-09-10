@@ -2,6 +2,12 @@ package edu.berkeley.cellscope.cscore.celltracker.mobilestage;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
@@ -9,6 +15,7 @@ import org.opencv.core.Rect;
 
 import edu.berkeley.cellscope.cscore.celltracker.MathUtils;
 import edu.berkeley.cellscope.cscore.celltracker.RealtimeImageProcessor;
+import edu.berkeley.cellscope.cscore.celltracker.StepNavigator;
 
 /**
  * Track objects across several fovs.
@@ -29,27 +36,46 @@ import edu.berkeley.cellscope.cscore.celltracker.RealtimeImageProcessor;
  * 9.	When all objects are found, mark all objects as not found and begin again
  * 			at step 2.
  */
-public class MobileTrackedField {
+public class MobileTrackedField implements RealtimeImageProcessor, StepNavigator.NavigationCallback {
 	private List<MobileObj> objects;	//objects currently being tracked
-	private List<MobileObj> found, notFound; //lists objects that are found and not found
+	private List<MobileObj> notFound; //lists objects that are found and not found
 	private List<MobileObj> toProcess;	//list of objects to process
 	private boolean active; 			//true if actively tracking objecsts
-	private MobileFov currentFov;
-	private Point fovCenter;
+	private MobileFov currentFov;	//fov used in the last update
 	private double radius;
+	private StepNavigator navigator;
+	private int interval;
+	private Mat currentFrame; //the frame inside currentFov
+	private Mat nextFrame;	//queue the next frame to use
+	private long nextTime;
+	private boolean waitForNavigation, waitForFrame;
+	private final Point navigationMoved, navigationError;
+		//stores where the navigator moved to, and how far off it was from its original intended target
 	
-	private static final double REQUIRED_DISTANCE = 0.7;
 	
-	public MobileTrackedField() {
+	private ScheduledExecutorService updateThread; //This thread will run image processing separately from the main UI thread
+	private final Object frameLock; //used to synchronize frame updates and navigation callback
+
+	private static final int INITIAL_DELAY = 500;
+	private static final int DEFAULT_INTERVAL = 250;
+	
+	
+	public MobileTrackedField(StepNavigator nav) {
 		objects = new ArrayList<MobileObj>(); 
-		found = new ArrayList<MobileObj>();
 		notFound = new ArrayList<MobileObj>();
 		toProcess = new ArrayList<MobileObj>();
 		active = false;
+		navigator = nav;
+		navigator.addCallback(this);
+		frameLock = new Object();
+		navigationMoved = new Point();
+		navigationError = new Point();
 	}
 	
-	public void setStartingFov(Mat img, Point center, long time) {
+	public void setStartingFov(Mat img, Point center, double radius, long time) {
+		currentFrame = img;
 		Point start = new Point(0, 0);
+		this.radius = radius;
 		currentFov = new MobileFov(center, radius, img, start, time);
 	}
 	
@@ -73,18 +99,10 @@ public class MobileTrackedField {
 	 * Greedy: finds the closest object not yet found to move to.
 	 */
 	private Point nextTargetLocation() {
-		//Switch the found and notFound lists to reset if
-		//all objects have already been found.
-		if (notFound.isEmpty()) {
-			List<MobileObj> tmp = notFound;
-			notFound = found;
-			found = tmp;
-		}
-		
 		Point currentLoc = currentFov.getAbsoluteLocation();
 		double bestDistSqr = -1;
 		Point bestTargetLoc = null;
-		for (MobileObj obj: objects) {
+		for (MobileObj obj: notFound) {
 			Point objLoc = obj.getAbsoluteLocation();
 			double distSqr = MathUtils.distSqr(currentLoc, objLoc);
 			if (bestDistSqr == -1 || distSqr < bestDistSqr) {
@@ -95,29 +113,35 @@ public class MobileTrackedField {
 		return bestTargetLoc;
 	}
 	
+	//Return a list of objects that we expect to find in this (absolute) location's field of vision.
 	public List<MobileObj> expectedObjects(Point location) {
 		toProcess.clear();
-		Point tmp = new Point();
+		double r2 = radius * radius;
 		for (MobileObj obj: objects) {
-			if (!obj.currentFov(currentFov))
-				continue;
-			Point objPos = obj.getRelativeLocation();
-			Point offset = currentFov.getOffset(location);
-//			MathUtils.set(tmp, position);
-//			MathUtils.add(tmp, )
-//			if (currentFov.pointWithinBounds(position, REQUIRED_DISTANCE))
-//				toProcess.add(obj);
+			Point objPos = obj.getAbsoluteLocation();
+			if (MathUtils.distSqr(objPos, location) <= r2) {
+				toProcess.add(obj);
+			}
 		}
 		return toProcess;
 	}
-/*
+
+	//Update the current frame being stored.
 	public void processFrame(Mat mat) {
+		synchronized (frameLock) {
+			currentFrame = mat;
+			nextTime = System.currentTimeMillis();
+			if (waitForFrame && !waitForNavigation)
+				waitForFrame = false;
+		}
 	}
 
 	public boolean isRunning() {
+		return active;
 	}
 
 	public void start() {
+		active = true;
 	}
 
 	public void stop() {
@@ -127,5 +151,61 @@ public class MobileTrackedField {
 	}
 
 	public void continueRunning() {
-	}*/
+	}
+	
+	public void setInterval(int i) {
+		interval = i;
+	}
+	
+	//Update all object's positions, moving as necessary.
+	private void update() {
+		//Reset the list of objects that have been updated.
+		notFound.clear();
+		notFound.addAll(objects);
+		
+		//Continue while there are objects that have not been updated.
+		while (!notFound.isEmpty()) {
+			Point location = nextTargetLocation();
+			navigator.setTarget(location);
+			navigator.start();
+			waitForMotion();
+			synchronized (frameLock) {
+				//currentFov = new MobileFov();;
+			}
+		}
+	}
+	
+	private void initiateUpdateThread() {
+		updateThread = Executors.newSingleThreadScheduledExecutor();
+		Runnable updater = new Runnable() {
+			public void run() {
+				update();
+			}
+		};
+		updateThread.scheduleAtFixedRate(updater, INITIAL_DELAY, interval, TimeUnit.MILLISECONDS);
+	}
+	
+	public void navigationComplete(Point target, Point moved, Point error) {
+		synchronized (frameLock) {
+			waitForNavigation = false;
+			MathUtils.set(navigationError, error);
+			MathUtils.set(navigationMoved, moved);
+		}
+	}
+
+	//Wait for the navigator to finish moving and the frame to update.
+	private void waitForMotion() {
+		Lock lock = new ReentrantLock();
+		Condition condition = lock.newCondition();
+		lock.lock();
+		try {
+			while (waitForNavigation || waitForFrame) {
+				condition.await();
+			}
+		} catch (InterruptedException e) {
+			stop();
+		} finally {
+			lock.unlock();
+		}
+	}
 }

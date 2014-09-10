@@ -1,5 +1,8 @@
 package edu.berkeley.cellscope.cscore.celltracker;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Size;
@@ -11,42 +14,42 @@ import edu.berkeley.cellscope.cscore.cameraui.TouchSwipeControl;
  * Determines the number of motor steps that backlash will consume.
  */
 public class StepCalibrator implements RealtimeImageProcessor {
-	private boolean busy;
-	private boolean calibrated;
-	private int xPosBacklash, xNegBacklash, yPosBacklash, yNegBacklash;
-	private Point xPosStep, xNegStep, yPosStep, yNegStep;
-	private int xBacklash, yBacklash;			//backlash experienced on the stepper motor, in number of steps
-	private Point xStep, yStep;
-	private int[] backlashResults;
-	private Point[] stepResults;
-	private int currentState, currentDir;
-	private int wait;
-	private boolean continueCalibration;
-	private int trackerResponses;
-	private int moves;
+	private boolean busy, calibrated;
+	private Point backlash;					//backlash experienced on the stepper motor, in number of steps
+	private Point xStep, yStep;				//number of pixels per step
+	private int[] backlashResults;			//temporarily holds backlash results from each step of calibration
+	private Point[] partialStepResults;		//temporarily holds the partial step that occurs when coming off backlash
+	private Point[] stepResults;			//temporarily holds step size results from each step of calibration
+	private boolean continueCalibration;	//false if calibration is to be stopped
+	private int currentState, currentDir;	//the current direction the stage is calibrating, and the step it is on
+	private int trackerResponses;			//counts the number of FovTrackers that have finished calculating
+	private int moves;						//counts the number of strides that have been taken
+	private int wait;						//counts frames to wait
 	private FovTracker[] trackers;
 	private TrackerResult[] trackerResults;
-	private TouchSwipeControl stage;
-	private CalibrationCallback callback;
+	private TouchSwipeControl stage;		//controls the stage
+	private List<CalibrationCallback> callbacks;
 	
-	private static final int STATE_RESET = 0;
-	private static final int STATE_WAIT = 1;
-	private static final int STATE_BACKLASH = 2;
-	private static final int STATE_STEP = 3;
+	private static final int STATE_RESET = 0;		//Stage moves continuously in one direction to maximize backlash in the other
+	private static final int STATE_WAIT = 1;		//Calibrator is waiting several frames for screen to update
+	private static final int STATE_BACKLASH = 2;	//Calibrator is calculating the stage's backlash
+	private static final int STATE_STEP = 3;		//Calibrator is calculating the stage's step size
 	
-	private static final int[] MOVE_DIR = new int[]{TouchControl.xPositive, TouchControl.xNegative, TouchControl.yPositive, TouchControl.yNegative};
-	private static final int[] RESET_DIR = new int[]{TouchControl.xNegative, TouchControl.xPositive, TouchControl.yNegative, TouchControl.yPositive};
+	private static final int[] MOVE_DIR = new int[]{TouchControl.xPositive, TouchControl.xNegative,
+			TouchControl.yPositive, TouchControl.yNegative};	//Order of directions to calibrate the stage in
+	private static final int[] RESET_DIR = new int[]{TouchControl.xNegative, TouchControl.xPositive,
+			TouchControl.yNegative, TouchControl.yPositive};	//Order of directions the stage to move to reset, opposite of MOVE_DIR
 	
-	private static final int REQUIRED_BACKLASH_MOVES = 6;
-	public static final int STRIDE_SIZE = 3;
-	public static final int REQUIRED_STRIDES = 6;
+	private static final int REQUIRED_BACKLASH_MOVES = 6; 	//If the screen moves for this many consecutive strides, there is no more backlash
+	public static final int STRIDE_SIZE = 3;				//Number of steps the stage moves at once, per "stride"
+	public static final int REQUIRED_STRIDES = 6;			//Number of strides the stage takes to calibrate
 	
-	private static final double TRACKER_SIZE = 0.05;
-	private static final double TRACKER_SPACING = 0.07;
-	private static final int TRACKER_COUNT = 4;
+	private static final double TRACKER_SIZE = 0.05;		//Size of each FovTracker relative to the smallest screen dimen.
+	private static final double TRACKER_SPACING = 0.07;		//Distance between each FovTracker
+	private static final int TRACKER_COUNT = 4;				//Number of FovTrackers
 	
-	private static final int BACKLASH_LIMIT = 42;
-	private static final int WAIT_FRAMES = 2;
+	private static final int BACKLASH_LIMIT = 42;			//Calibration will fail if the backlash is greater than this many steps
+	private static final int WAIT_FRAMES = 2;				//Number of frames to wait after each movement of the stage for the screen to update
 	public static final String SUCCESS_MESSAGE = "Calibration successful";
 	public static final String FAILURE_MESSAGE = "Calibration failed";
 
@@ -84,14 +87,17 @@ public class StepCalibrator implements RealtimeImageProcessor {
         for (int i = 0; i < TRACKER_COUNT; i ++)
         	trackerResults[i] = new TrackerResult(trackers[i]);
         
-        xPosStep = new Point();
-        xNegStep = new Point();
-        yPosStep = new Point();
-        yNegStep = new Point();
         xStep = new Point();
         yStep = new Point();
+        backlash = new Point();
         backlashResults = new int[4];
+        Point xPosStep = new Point();
+        Point xNegStep = new Point();
+        Point yPosStep = new Point();
+        Point yNegStep = new Point();
         stepResults = new Point[]{xPosStep, xNegStep, yPosStep, yNegStep};
+        partialStepResults = new Point[]{new Point(), new Point(), new Point(), new Point()};
+        callbacks = new ArrayList<CalibrationCallback>();
 	}
 	
 	public void start() {
@@ -107,41 +113,41 @@ public class StepCalibrator implements RealtimeImageProcessor {
 		for (int i = 0; i < backlashResults.length; i ++) {
 			backlashResults[i] = 0;
 			MathUtils.set(stepResults[i], 0, 0);
+			MathUtils.set(partialStepResults[i], 0, 0);
 		}
 		for (FovTracker tracker: trackers)
 			tracker.start();
 	}
 	
+	/** 
+	 * Records values and sends commands to the stage as necessary
+	 */
 	private void executeCalibration() {
 		if (currentState == STATE_RESET) {
-			System.out.println("reset " + currentDir);
 			if (RESET_DIR[currentDir] == TouchSwipeControl.stopMotor)
 				continueRunning();
 			else
 				stage.swipe(RESET_DIR[currentDir], BACKLASH_LIMIT);
 			wait = WAIT_FRAMES;
 			toNextStep();
-		}
-		else if (currentState == STATE_WAIT) {
-			System.out.println("wait " + currentDir);
+		} else if (currentState == STATE_WAIT) {
 			wait --;
 			if (wait <= 0)
 				toNextStep();
 			continueRunning();
-		}
-		else if (currentState == STATE_BACKLASH) {
-			System.out.println("backlash " + currentDir);
+		} else if (currentState == STATE_BACKLASH) {
 			if (!continueCalibration)
 				moves ++;
-			else
+			else {
 				moves = 0;
+				MathUtils.set(partialStepResults[currentDir], 0, 0);
+			}
 			if (moves == REQUIRED_BACKLASH_MOVES) {
 				backlashResults[currentDir] -= moves * STRIDE_SIZE;
 				moves = 0;
 				toNextStep();
 				stage.swipe(MOVE_DIR[currentDir], STRIDE_SIZE);
-			}
-			else {
+			} else {
 				continueCalibration = false;
 				backlashResults[currentDir] += STRIDE_SIZE;
 				if (backlashResults[currentDir] >= BACKLASH_LIMIT && moves == 0)
@@ -149,12 +155,9 @@ public class StepCalibrator implements RealtimeImageProcessor {
 				else
 					stage.swipe(MOVE_DIR[currentDir], STRIDE_SIZE);
 			}
-		}
-		else if (currentState == STATE_STEP) {
-			System.out.println("step " + currentDir);
+		} else if (currentState == STATE_STEP) {
 			for (int i = 0; i < TRACKER_COUNT; i ++)
 				MathUtils.add(stepResults[currentDir], trackerResults[i].movement);
-			System.out.println(stepResults[currentDir]);
 			moves ++;
 			if (moves == REQUIRED_STRIDES) {
 				moves = 0;
@@ -162,13 +165,14 @@ public class StepCalibrator implements RealtimeImageProcessor {
 					calibrationComplete();
 				else
 					stage.swipe(MOVE_DIR[currentDir], STRIDE_SIZE);
-			}
-			else
+			} else
 				stage.swipe(MOVE_DIR[currentDir], STRIDE_SIZE);
 		}
 	}
 	
-	//return true when done
+	/* Advances to the next step of calibration.
+	 * If calibration is already on the last step, return true.
+	 */
 	private boolean toNextStep() {
 		currentState ++;
 		if (currentState > STATE_STEP) {
@@ -190,6 +194,7 @@ public class StepCalibrator implements RealtimeImageProcessor {
 			tracker.displayFrame(mat);
 	}
 	
+	//All FovTrackers to resume
 	public void continueRunning() {
 		for (FovTracker tracker: trackers)
 			tracker.resume();
@@ -208,32 +213,25 @@ public class StepCalibrator implements RealtimeImageProcessor {
 		System.out.println("calibration complete");
 		for (FovTracker tracker: trackers)
 			tracker.stop();
-		System.out.println("Step sizes: ");
-		System.out.println("x - " + xPosStep + " " + xNegStep);
-		System.out.println("y - " + yPosStep + " " + yNegStep);
 		for (int i = 0; i < stepResults.length; i ++)
 			MathUtils.divide(stepResults[i], TRACKER_COUNT * REQUIRED_STRIDES * STRIDE_SIZE);
-		xPosBacklash = backlashResults[0];
-		xNegBacklash = backlashResults[1];
-		yPosBacklash = backlashResults[2];
-		yNegBacklash = backlashResults[3];
-		xBacklash = (xPosBacklash + xNegBacklash) / 2;
-		yBacklash = (yPosBacklash + yNegBacklash) / 2;
-		MathUtils.set(xStep, xPosStep);
-		MathUtils.subtract(xStep, xNegStep);
+		backlash.x = (backlashResults[0] + backlashResults[1]) / 2;
+		backlash.y = (backlashResults[2] + backlashResults[3]) / 2;
+		MathUtils.set(xStep, stepResults[0]);
+		MathUtils.subtract(xStep, stepResults[1]);
 		MathUtils.divide(xStep, 2);
-		MathUtils.set(yStep, yPosStep);
-		MathUtils.subtract(yStep, yNegStep);
+		MathUtils.set(yStep, stepResults[3]);
+		MathUtils.subtract(yStep, stepResults[4]);
 		MathUtils.divide(yStep, 2);
 		busy = false;
 		calibrated = true;
-		callback.calibrationComplete(true);
+		for (CalibrationCallback c: callbacks)
+			c.calibrationComplete(true);
 		System.out.println("Backlash: ");
-		System.out.println("x - "+ xPosBacklash + " " + xNegBacklash);
-		System.out.println("y - "+ yPosBacklash + " " + yNegBacklash);
+		System.out.println(backlash);
 		System.out.println("Step sizes: ");
-		System.out.println("x - " + xPosStep + " " + xNegStep);
-		System.out.println("y - " + yPosStep + " " + yNegStep);
+		System.out.println("x " + xStep);
+		System.out.println("y " + yStep);
 	}
 	
 	
@@ -247,11 +245,16 @@ public class StepCalibrator implements RealtimeImageProcessor {
 			tracker.stop();
 		busy = false;
 		calibrated = false;
-		callback.calibrationComplete(false);
+		for (CalibrationCallback c: callbacks)
+			c.calibrationComplete(false);
 	}
 	
-	public void setCallback(CalibrationCallback c) {
-		callback = c;
+	public void addCallback(CalibrationCallback c) {
+		callbacks.add(c);
+	}
+	
+	public void removeCallback(CalibrationCallback c) {
+		callbacks.remove(c);
 	}
 	
 	private synchronized void continueCalibration(boolean result) {
@@ -277,11 +280,11 @@ public class StepCalibrator implements RealtimeImageProcessor {
 		
 		private TrackerResult(FovTracker ft) {
 			tracker = ft;
-			tracker.setCallback(this);
+			tracker.addCallback(this);
 			movement = new Point();
 		}
 		
-		public synchronized void onMotionResult(Point result) {
+		public synchronized void motionResult(Point result) {
 			continueCalibration(result.x == 0 && result.y == 0);
 			tracker.pause();
 			MathUtils.set(movement, result);
@@ -290,9 +293,7 @@ public class StepCalibrator implements RealtimeImageProcessor {
 		}
 	}
 
-	/*
-	 * Convert a target location in the screen's x-y to the number of steps in the motor's x-y.
-	 */
+	/* Convert a target location in the screen's x-y to the number of steps in the motor's x-y. */
 	public Point getRequiredSteps(Point target) {
 		if (!calibrated)
 			return new Point(0, 0);
@@ -310,25 +311,21 @@ public class StepCalibrator implements RealtimeImageProcessor {
 		return stage;
 	}
 	
-	/** Adds steps to account for backlash in either direction. */
+	/* Adds steps to account for backlash in either direction. */
 	public Point adjustBacklash(Point steps) {
 		if (steps.x > 0) {
-			boolean backlash = stage.backlashOccurs(TouchControl.xPositive);
-			if (backlash)
-				steps.x += xBacklash;
+			if (stage.backlashOccurs(TouchControl.xPositive))
+				steps.x += backlash.x;
 		} else if (steps.x < 0) {
-			boolean backlash = stage.backlashOccurs(TouchControl.xNegative);
-			if (backlash)
-				steps.x -= xBacklash;
+			if (stage.backlashOccurs(TouchControl.xNegative))
+				steps.x -= backlash.x;
 		}
 		if (steps.y > 0) {
-			boolean backlash = stage.backlashOccurs(TouchControl.yPositive);
-			if (backlash)
-				steps.y += yBacklash;
+			if (stage.backlashOccurs(TouchControl.yPositive))
+				steps.y += backlash.y;
 		} else if (steps.y < 0) {
-			boolean backlash = stage.backlashOccurs(TouchControl.yNegative);
-			if (backlash)
-				steps.y -= yBacklash;
+			if (stage.backlashOccurs(TouchControl.yNegative))
+				steps.y -= backlash.y;
 		}
 		return steps;
 	}

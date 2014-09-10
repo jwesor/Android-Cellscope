@@ -54,6 +54,14 @@
         android:onClick="goToSwipePan"/>
     
     <Button
+        android:id="@+id/button_stage_cam"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Stage Cam"
+        android:onClick="goToStageCam"/>
+    
+    
+    <Button
         android:id="@+id/button_track_cam"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

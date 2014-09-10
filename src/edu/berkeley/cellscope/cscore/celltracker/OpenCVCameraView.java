@@ -1,7 +1,6 @@
 package edu.berkeley.cellscope.cscore.celltracker;
 
 import java.io.File;
-import java.util.List;
 
 import org.opencv.android.JavaCameraView;
 
@@ -34,7 +33,7 @@ public class OpenCVCameraView extends JavaCameraView {
 		}
 	}
 	
-	public void disableAutoFocus() {
+	public void disableBuiltInAutoFocus() {
 		synchronized(this) {
 			if (mCamera != null && !disabled) {
 				Camera.Parameters params = mCamera.getParameters();

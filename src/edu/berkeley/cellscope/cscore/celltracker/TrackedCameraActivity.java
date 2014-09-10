@@ -8,6 +8,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import edu.berkeley.cellscope.cscore.ScreenDimension;
 
+//Test activity for tracking: tap screen to add objects to follow
 public class TrackedCameraActivity extends OpenCVCameraActivity implements View.OnTouchListener {
 	
 	private TrackedField field;

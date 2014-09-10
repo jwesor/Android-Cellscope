@@ -8,8 +8,10 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import edu.berkeley.cellscope.cscore.R;
-import edu.berkeley.cellscope.cscore.cameraui.BluetoothControllable;
+import edu.berkeley.cellscope.cscore.cameraui.IlluminationControl;
 import edu.berkeley.cellscope.cscore.cameraui.TouchSwipeControl;
+
+/* Has all stage basics.*/
 
 /*
  * Class for testing the stepper counter.
@@ -19,32 +21,21 @@ import edu.berkeley.cellscope.cscore.cameraui.TouchSwipeControl;
  * to count down. When the first command is done executing (i.e. no more steps remaining),
  * the next command will be executed if it has remaining steps.
  */
-public class SwipePanActivity extends OpenCVCameraActivity implements Autofocus.AutofocusCallback, StepCalibrator.CalibrationCallback, FovTracker.MotionCallback {
-	private MenuItem mMenuItemCalibrate, mMenuItemAutofocus, mMenuItemIllumination;
+public class StageCameraActivity extends OpenCVCameraActivity implements Autofocus.AutofocusCallback, FovTracker.MotionCallback {
+	private MenuItem mMenuItemAutofocus, mMenuItemIllumination;
 
-	protected TouchSwipeControl touchSwipe;
-	private StepCalibrator calibrator;
-	private StepNavigator navigator;
-	private FovTracker positionTracker;
 	protected Autofocus autofocus;
+	protected IlluminationControl illumination;
 
 	@Override
 	protected void createAddons(int width, int height) {
 		super.createAddons(width, height);
-		touchPan.setEnabled(false);
-		touchSwipe = new NavigationSwipeControl(this, width, height);
-		touchSwipe.setEnabled(true);
-		compoundTouch.addTouchListener(touchSwipe);
+		touchPan.setEnabled(true);
 		TouchSwipeControl swipeDriver = new TouchSwipeControl(this, width, height);
 		autofocus = new Autofocus(swipeDriver);
 		autofocus.addCallback(this);
 		realtimeProcessors.add(autofocus);
-		calibrator = new StepCalibrator(swipeDriver, width, height);
-		calibrator.addCallback(this);
-		positionTracker = new FovTracker(width, height);
-		navigator = new StepNavigator(calibrator, autofocus, positionTracker);
-		realtimeProcessors.add(calibrator);
-		realtimeProcessors.add(navigator);
+		illumination = new IlluminationControl(this);
 	}
 
 	@Override
@@ -52,22 +43,8 @@ public class SwipePanActivity extends OpenCVCameraActivity implements Autofocus.
 		super.readMessage(msg);
 		byte[] buffer = (byte[])(msg.obj);
 		if (buffer.length > 0) {
-			//			int message = (int)(buffer[0]);
-			if (calibrator.isRunning()) {
-				//				if (message == BluetoothControllable.PROCEED)
-				calibrator.continueRunning();
-				//				else if (message == BluetoothControllable.FAILED)
-				//					calibrator.calibrationFailed();
-			}
-			else if (navigator.isRunning()) {
-				//				if (message == BluetoothControllable.PROCEED)
-				navigator.continueRunning();
-				//				else if (message == BluetoothControllable.FAILED)
-				//					navigator.stop();
-			}
-			else if (autofocus.isRunning()) {
+			if (autofocus.isRunning())
 				autofocus.continueRunning();
-			}
 		}
 	}
 
@@ -82,28 +59,28 @@ public class SwipePanActivity extends OpenCVCameraActivity implements Autofocus.
 	@Override
 	public void bluetoothConnected() {
 		super.bluetoothConnected();
-		if (mMenuItemCalibrate != null)
-			mMenuItemCalibrate.setEnabled(true);
 		if (mMenuItemAutofocus != null)
 			mMenuItemAutofocus.setEnabled(true);
-		if (mMenuItemIllumination != null)
+		if (mMenuItemIllumination != null) {
 			mMenuItemIllumination.setEnabled(true);
+			illumination.enableIllumination();
+		}
 	}
 
 	@Override
 	public void bluetoothDisconnected() {
 		super.bluetoothDisconnected();
-		if (mMenuItemCalibrate != null)
-			mMenuItemCalibrate.setEnabled(false);
 		if (mMenuItemAutofocus != null)
 			mMenuItemAutofocus.setEnabled(false);
-		if (mMenuItemIllumination != null)
+		if (mMenuItemIllumination != null) {
 			mMenuItemIllumination.setEnabled(false);
+			illumination.disableIllumination();
+		}
 	}
 
 	@Override
 	public boolean controlReady() {
-		return super.controlReady() && !calibrator.isRunning();
+		return super.controlReady() && !autofocus.isRunning();
 	}
 
 	public void hideControls() {
@@ -126,9 +103,6 @@ public class SwipePanActivity extends OpenCVCameraActivity implements Autofocus.
 		inflater.inflate(R.menu.menu_illumination, menu);
 		mMenuItemIllumination = menu.getItem(menuItems++);
 		mMenuItemIllumination.setEnabled(false);
-		inflater.inflate(R.menu.menu_calibrate, menu);
-		mMenuItemCalibrate = menu.getItem(menuItems++);
-		mMenuItemCalibrate.setEnabled(false);
 		return true;
 	}
 
@@ -137,53 +111,15 @@ public class SwipePanActivity extends OpenCVCameraActivity implements Autofocus.
 		if (super.onOptionsItemSelected(item))
 			return true;
 		int id = item.getItemId();
-		if (id == R.id.calibrate) {
-			runStageCalibration();
-			return true;
-		}
-		else if (id == R.id.autofocus) {
+		if (id == R.id.autofocus) {
 			autofocus.start();
+			return true;
+		} else if (id == R.id.illuminate) {
+			illumination.toggleIllumination();
 			return true;
 		}
 		return false;
 	}
-
-	public void runStageCalibration() {
-		calibrator.start();
-	}
-
-	public void calibrationComplete(boolean success) {
-		if (success)
-			toast(StepCalibrator.SUCCESS_MESSAGE);
-		else
-			toast(StepCalibrator.FAILURE_MESSAGE);
-	}
-
-	/* Redirects all input to StepNavigator instead of carrying out the stage motions itself.
-	 */
-	private class NavigationSwipeControl extends TouchSwipeControl {
-
-		public NavigationSwipeControl(BluetoothControllable s, int w, int h) {
-			super(s, w, h);
-		}
-
-		@Override
-		public void swipeStage(double x, double y) {
-			System.out.println("test " + x + " " + y);
-			if (!stage.controlReady() || navigator.isRunning())
-				return;
-			System.out.println("pass");
-			navigator.setTarget((int)x, (int)y);
-			navigator.start();
-		}
-
-		@Override
-		public void swipe(int dir, int steps) {
-			return;
-		}
-
-	}
-
 
 	public void focusComplete(boolean success) {
 		if (success)

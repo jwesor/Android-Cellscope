@@ -1,5 +1,7 @@
 package edu.berkeley.cellscope.cscore.celltracker;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -8,11 +10,10 @@ import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
-import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
-/*
+/**
  * When enabled, will asynchronously calculate how much the contents of the screen move by.
  * This is done by sampling a small area on the screen and cross correlating its position several
  * frames later.
@@ -41,16 +42,12 @@ public class FovTracker implements RealtimeImageProcessor {
 	protected int frameCounter;
 	protected boolean firstFrame;
 	
-	MotionCallback callback;
+	private List<MotionCallback> callbacks;
 	
 	protected static final int TRACK_INTERVAL = 1; //Minimum number of frames between every update
 	//A larger sample size will give greater accuracy for slow pans, but cannot detect fast pans
 	private static final double SAMPLE_SIZE = 0.2;
 	private static final int WAIT_AFTER_PAUSE = 2; //After resuming from pause, wait this many frames for the camera preview to catch up.
-	
-	protected static Scalar RED = new Scalar(255, 0, 0, 255);
-	protected static Scalar GREEN = new Scalar(0, 255, 0, 255);
-	protected static Scalar BLUE = new Scalar(0, 0, 255, 255);
 	
 	public FovTracker(int w, int h, Rect r) {
 		init(w, h, r);
@@ -77,6 +74,7 @@ public class FovTracker implements RealtimeImageProcessor {
         panCorner2 = new Point();
         waitDuration = WAIT_AFTER_PAUSE;
         calculation = new PositionCalculation();
+        callbacks = new ArrayList<MotionCallback>();
 	}
 	
 	public void setPause(int i) {
@@ -93,8 +91,8 @@ public class FovTracker implements RealtimeImageProcessor {
 		MathUtils.set(panCorner2, roiCorner2);
 		MathUtils.add(panCorner2, translation);
 		
-    	Core.rectangle(mRgba, roiCorner1, roiCorner2, GREEN);
-    	Core.rectangle(mRgba, panCorner1, panCorner2, BLUE);
+    	Core.rectangle(mRgba, roiCorner1, roiCorner2, Colors.GREEN);
+    	Core.rectangle(mRgba, panCorner1, panCorner2, Colors.BLUE);
 	}
 	
 	public void continueRunning() {
@@ -175,12 +173,12 @@ public class FovTracker implements RealtimeImageProcessor {
 		busy = b;
 	}
 	
-	//public synchronized void updateCalcQueueCount(int i) {
-	//	queuedCalcs += i;
-	//}
+	public void addCallback(MotionCallback c) {
+		callbacks.add(c);
+	}
 	
-	public void setCallback(MotionCallback c) {
-		callback = c;
+	public void removecallback(MotionCallback c) {
+		callbacks.remove(c);
 	}
 
 	private class PositionCalculation implements Runnable {
@@ -209,13 +207,13 @@ public class FovTracker implements RealtimeImageProcessor {
 	        	setBusy(false);
 	    	//	updateCalcQueueCount(-1);
         	}
-        	if (callback != null)
-        		callback.onMotionResult(MathUtils.set(result, translation));
+        	for (MotionCallback c: callbacks)
+        		c.motionResult(MathUtils.set(result, translation));
 		}
 	}
 	
 	public interface MotionCallback {
-		public void onMotionResult(Point result);
+		public void motionResult(Point result);
 	}
 
 	//Performs cross-correlation on two matrixes.

@@ -1,5 +1,8 @@
 package edu.berkeley.cellscope.cscore.celltracker;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.Size;
@@ -7,7 +10,7 @@ import org.opencv.imgproc.Imgproc;
 
 import edu.berkeley.cellscope.cscore.cameraui.TouchSwipeControl;
 /*
- * Autofocus algorithm:
+ * Autofocus:
  * 1. Move up 8 strides.
  * 2. Switch direction.
  * 3. Sweep 16 strides. Keep track of the highest and lowest scores.
@@ -16,13 +19,14 @@ import edu.berkeley.cellscope.cscore.cameraui.TouchSwipeControl;
  * 5. Compare the highest score to the best score. If better, replace.
  * 6. Halve stride size.
  * 7. Repeat 2 thru 6 until stopped, or until stride size drops below a minimum. If latter, quit and report success.
- *  
+ * 
  * Scores are calculated via edge detection. The scores peak in a range fo about 128 steps,
  * and is noisy on either side of the peak. Start the initial stride size at 64 steps.
+ * (steps refers to steps on the stepper motor. stride refers to a series of steps taken at once)
  */
 public class Autofocus implements RealtimeImageProcessor {
 	private TouchSwipeControl stage;
-	private AutofocusCallback callback;
+	private final List<AutofocusCallback> callbacks;
 	private boolean busy;
 	private int strideSize, direction;
 	private int currentPosition, targetPosition;
@@ -30,15 +34,15 @@ public class Autofocus implements RealtimeImageProcessor {
 	private int waitFrames, state;
 	private int bestScore, bestNetScore, lowestNetScore, unfocusedScore;
 	private boolean passedPeak;
-	
+
 	private final Object lockStatus;
-	
+
 	private static final int QUICK_INITIAL_STRIDE = 16;
 	private static final int INITIAL_STRIDE = 32; //Stride size cannot be greater than 127 steps, due to size limitations on byte
 	private static final int Z_RANGE = 16; //Check 4 steps on either side of the current position
 	private static final int MINIMUM_STRIDE = 8;
 	private static final double STRICTNESS = 0.9; //0~1. How close to perfect do we stop at? Autofocus will be more likely to fail
-													//and overshoot if this is too high, but will stop out of focus when too low
+	//and overshoot if this is too high, but will stop out of focus when too low
 	private static final int PAUSE = 3; //Number of frames to wait after motion stops for the camera to catch up.
 	private static final double EDGE_THRESHOLD_RATIO = 1.5;
 	private static final double EDGE_LOWER_THRESHOLD = 64;
@@ -47,26 +51,31 @@ public class Autofocus implements RealtimeImageProcessor {
 	private static final int STATE_STEPPING = 2; //In movement, stopping at intervals for analysis
 	private static final int STARTING_DIRECTION = TouchSwipeControl.zNegative;
 	private static final int OPPOSITE_DIRECTION = TouchSwipeControl.zPositive;
-	
+
 	private static final int NO_CALCULATION = -1;
-	
+
 	private static final int SCORE_PEAK_SIZE = 4;
-	
+
 	private static final Size BLUR = new Size(3, 3);
-	
+
 	public static final String SUCCESS_MESSAGE = "Autofocus successful";
 	public static final String FAILURE_MESSAGE = "Autofocus failed";
-	
+
 	public Autofocus(TouchSwipeControl s) {
 		stage = s;
 		busy = false;
 		lockStatus = new Object();
+		callbacks = new ArrayList<AutofocusCallback>();
 	}
-	
-	public void setCallback(AutofocusCallback a) {
-		callback = a;
+
+	public void addCallback(AutofocusCallback a) {
+		callbacks.add(a);
 	}
-	
+
+	public void removeCallback(AutofocusCallback a) {
+		callbacks.remove(a);
+	}
+
 	public void start() {
 		if (busy || !stage.bluetoothConnected())
 			return;
@@ -82,7 +91,7 @@ public class Autofocus implements RealtimeImageProcessor {
 			continueRunning();
 		}
 	}
-	
+
 	public void quickFocus() {
 		if (busy || !stage.bluetoothConnected())
 			return;
@@ -98,7 +107,7 @@ public class Autofocus implements RealtimeImageProcessor {
 			continueRunning();
 		}
 	}
-	
+
 	//This is the main method, called whenever the stage finishes moving.
 	public synchronized void continueRunning() {
 		if (!busy)
@@ -124,11 +133,11 @@ public class Autofocus implements RealtimeImageProcessor {
 		}
 		if (state == STATE_STEPPING) {
 			synchronized(lockStatus) {
-				waitFrames = PAUSE; 
+				waitFrames = PAUSE;
 			}
 		}
 	}
-	
+
 	public synchronized void processFrame(Mat mat) {
 		synchronized(lockStatus) {
 			if (!busy || waitFrames == NO_CALCULATION || state != STATE_STEPPING)
@@ -147,19 +156,19 @@ public class Autofocus implements RealtimeImageProcessor {
 		if (!calculateFocus(data))
 			stage.swipe(direction, strideSize);
 	}
-	
+
 	private void switchDirection() {
 		if (direction == STARTING_DIRECTION)
 			direction = OPPOSITE_DIRECTION;
 		else
 			direction = STARTING_DIRECTION;
 	}
-	
+
 	private void moveInZ(int position) {
 		currentPosition = 0;
 		targetPosition = Math.abs(position);
 	}
-	
+
 	//return true when target loctaion is reached
 	private boolean zMoveStep() {
 		System.out.println("moving " + currentPosition + " " + targetPosition);
@@ -169,29 +178,29 @@ public class Autofocus implements RealtimeImageProcessor {
 		stage.swipe(direction, strideSize);
 		return false;
 	}
-	
+
 	public boolean isRunning() {
 		return busy;
 	}
-	
+
 	public void stop() {
 		if (!busy)
 			return;
 		busy = false;
-		if (callback != null)
-			callback.focusCallback(false);
+		for (AutofocusCallback a: callbacks)
+			a.focusComplete(false);
 		System.out.println("focus failed");
 	}
-	
+
 	public void complete() {
 		if (!busy)
 			return;
 		busy = false;
-		if (callback != null)
-			callback.focusCallback(true);
+		for (AutofocusCallback a: callbacks)
+			a.focusComplete(true);
 		System.out.println("focus completed");
 	}
-	
+
 	private void calculationComplete() {
 		switchDirection();
 		stridesTaken = 0;
@@ -205,19 +214,19 @@ public class Autofocus implements RealtimeImageProcessor {
 		else
 			stage.swipe(direction, strideSize);
 	}
-	
+
 	//return true when the peak is passed
 	public boolean calculateFocus(Mat img) {
 		Imgproc.cvtColor(img, img, Imgproc.COLOR_BGR2GRAY);
 		Imgproc.blur(img, img, BLUR);
 		Imgproc.Canny(img, img, EDGE_LOWER_THRESHOLD, EDGE_LOWER_THRESHOLD * EDGE_THRESHOLD_RATIO);
 		int score = Core.countNonZero(img);
-		
+
 		System.out.println("[score=" + score + ", high=" + bestScore + ", best=" + bestNetScore + ", low=" + lowestNetScore + ", direction=" + direction);
-		
+
 		if (score == 0)
 			return false;
-		
+
 		if (lowestNetScore > score || lowestNetScore == 0) {
 			lowestNetScore = score;
 			if (lowestNetScore < unfocusedScore || unfocusedScore == 0)
@@ -230,8 +239,8 @@ public class Autofocus implements RealtimeImageProcessor {
 		}
 		if (passedPeak && score < bestScore) {
 			//if (stepSize != INITIAL_STEP || stepsTaken == Z_RANGE) {
-				calculationComplete();
-				return true;
+			calculationComplete();
+			return true;
 			//}
 		}
 		else if (bestScore > lowestNetScore * SCORE_PEAK_SIZE && score >= bestNetScore * STRICTNESS /*&& stepSize != INITIAL_STEP*/) {
@@ -251,12 +260,12 @@ public class Autofocus implements RealtimeImageProcessor {
 		}*/
 		return false;
 	}
-	
+
 	public void displayFrame(Mat mat) {
 		return;
 	}
-	
+
 	public static interface AutofocusCallback {
-		public void focusCallback(boolean success);
+		public void focusComplete(boolean success);
 	}
 }

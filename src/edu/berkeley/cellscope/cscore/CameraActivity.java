@@ -35,6 +35,8 @@ import android.view.View;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
+import edu.berkeley.cellscope.cscore.bluetooth.BluetoothSerialService;
+import edu.berkeley.cellscope.cscore.bluetooth.DeviceListActivity;
 import edu.berkeley.cellscope.cscore.cameraui.CompoundTouchListener;
 import edu.berkeley.cellscope.cscore.cameraui.TouchZoomControl;
 
@@ -43,7 +45,7 @@ import edu.berkeley.cellscope.cscore.cameraui.TouchZoomControl;
  */
 
 public class CameraActivity extends Activity implements TouchZoomControl.Zoomable {
-	//PhotoSurface mSurfaceView; 
+	//PhotoSurface mSurfaceView;
 	SurfaceView mSurfaceView;
 	SurfaceHolder mHolder;
 	Camera mCamera;
@@ -57,168 +59,168 @@ public class CameraActivity extends Activity implements TouchZoomControl.Zoomabl
 	boolean forceUpdateCamera;
 	ImageButton takePhoto, switchMode, zoomIn, zoomOut;
 	TextView zoomText;
-	
+
 	private static final String TAG = "Camera";
 	private static final int COMPRESSION_QUALITY = 90;
-	
+
 	//Bluetooth stuff
 
-    private MenuItem mMenuItemConnect;
-    private static BluetoothSerialService mSerialService = null;
-    private boolean mEnablingBT;
-	
-	// Intent request codes
-    private static final int REQUEST_CONNECT_DEVICE = 1;
-    private static final int REQUEST_ENABLE_BT = 2;
-	
+	private MenuItem mMenuItemConnect;
+	private static BluetoothSerialService mSerialService = null;
+	private boolean mEnablingBT;
 
-    // Name of the connected device
-    private String mConnectedDeviceName = null;
-    
+	// Intent request codes
+	private static final int REQUEST_CONNECT_DEVICE = 1;
+	private static final int REQUEST_ENABLE_BT = 2;
+
+
+	// Name of the connected device
+	private String mConnectedDeviceName = null;
+
 	private BluetoothAdapter mBluetoothAdapter = null;
 
-    private boolean mLocalEcho = false;
-    private boolean bluetoothEnabled = false;
-    private boolean proceedWithConnection = true;
-    TextView bluetoothNameLabel;
-    
-    // Message types sent from the BluetoothReadService Handler
-    public static final int MESSAGE_STATE_CHANGE = 1;
-    public static final int MESSAGE_READ = 2;
-    public static final int MESSAGE_WRITE = 3;
-    public static final int MESSAGE_DEVICE_NAME = 4;
-    public static final int MESSAGE_TOAST = 5;	
+	private boolean mLocalEcho = false;
+	private boolean bluetoothEnabled = false;
+	private boolean proceedWithConnection = true;
+	TextView bluetoothNameLabel;
 
-    // Key names received from the BluetoothChatService Handler
-    public static final String DEVICE_NAME = "device_name";
-    public static final String TOAST = "toast";
+	// Message types sent from the BluetoothReadService Handler
+	public static final int MESSAGE_STATE_CHANGE = 1;
+	public static final int MESSAGE_READ = 2;
+	public static final int MESSAGE_WRITE = 3;
+	public static final int MESSAGE_DEVICE_NAME = 4;
+	public static final int MESSAGE_TOAST = 5;
+
+	// Key names received from the BluetoothChatService Handler
+	public static final String DEVICE_NAME = "device_name";
+	public static final String TOAST = "toast";
 
 
-    /**
-     * Set to true to add debugging code and logging.
-     */
-    public static final boolean DEBUG = true;
+	/**
+	 * Set to true to add debugging code and logging.
+	 */
+	public static final boolean DEBUG = true;
 
-    /**
-     * Set to true to log each character received from the remote process to the
-     * android log, which makes it easier to debug some kinds of problems with
-     * emulating escape sequences and control codes.
-     */
-    public static final boolean LOG_CHARACTERS_FLAG = DEBUG && true;
+	/**
+	 * Set to true to log each character received from the remote process to the
+	 * android log, which makes it easier to debug some kinds of problems with
+	 * emulating escape sequences and control codes.
+	 */
+	public static final boolean LOG_CHARACTERS_FLAG = DEBUG && true;
 
-    /**
-     * Set to true to log unknown escape sequences.
-     */
-    public static final boolean LOG_UNKNOWN_ESCAPE_SEQUENCES = DEBUG && true;
+	/**
+	 * Set to true to log unknown escape sequences.
+	 */
+	public static final boolean LOG_UNKNOWN_ESCAPE_SEQUENCES = DEBUG && true;
 
-    /**
-     * The tag we use when logging, so that our messages can be distinguished
-     * from other messages in the log. Public because it's used by several
-     * classes.
-     */
+	/**
+	 * The tag we use when logging, so that our messages can be distinguished
+	 * from other messages in the log. Public because it's used by several
+	 * classes.
+	 */
 	public static final String LOG_TAG = "CellScope";
-	
+
 
 	public static final int MEDIA_TYPE_IMAGE = 1;
 	public static final int MEDIA_TYPE_VIDEO = 2;
 	// Create the storage directories
-	 public static File mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "MyCameraApp");
-	 public static File videoStorageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "MyVideoApp");
-	 static {
-		 if (!mediaStorageDir.exists())
-			 mediaStorageDir.mkdirs();
-		 if (!videoStorageDir.exists())
-			 videoStorageDir.mkdirs();
-	 }
-	 
+	public static File mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "MyCameraApp");
+	public static File videoStorageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "MyVideoApp");
+	static {
+		if (!mediaStorageDir.exists())
+			mediaStorageDir.mkdirs();
+		if (!videoStorageDir.exists())
+			videoStorageDir.mkdirs();
+	}
+
 	// The Handler that gets information back from the BluetoothService
-	    private final Handler mHandlerBT = new Handler() {
-	    	
-	        @Override
-	        public void handleMessage(Message msg) {        	
-	            switch (msg.what) {
-	            case MESSAGE_STATE_CHANGE:
-	                if(DEBUG) Log.i(LOG_TAG, "MESSAGE_STATE_CHANGE: " + msg.arg1);
-	                switch (msg.arg1) {
-	                case BluetoothSerialService.STATE_CONNECTED:
-	                    if(DEBUG) Log.i(LOG_TAG, "MESSAGE_STATE_CHANGE/STATE_CONNECTED");
-	                	if (mMenuItemConnect != null) {
-	                		mMenuItemConnect.setIcon(android.R.drawable.ic_menu_close_clear_cancel);
-	                		mMenuItemConnect.setTitle(R.string.disconnect);
-	                	}
-	                	
-	                	//Replace my input variable to the bluetooth device below
-	//------           	mInputManager.showSoftInput(mEmulatorView, InputMethodManager.SHOW_IMPLICIT);
-	                	
-	                	bluetoothNameLabel.setText(R.string.title_connected_to);
-	                	bluetoothNameLabel.append(mConnectedDeviceName);
-                		bluetoothEnabled = true;
-	                    break;
-	                    
-	                case BluetoothSerialService.STATE_CONNECTING:
-	                	if(DEBUG) Log.i(LOG_TAG, "MESSAGE_STATE_CHANGE/STATE_CONNECTING");
-	                	bluetoothNameLabel.setText(R.string.title_connecting);
-	                    break;
-	                    
-	                case BluetoothSerialService.STATE_LISTEN:
-	                	if(DEBUG) Log.i(LOG_TAG, "MESSAGE_STATE_CHANGE/STATE_LISTEN");
-	                case BluetoothSerialService.STATE_NONE:
-	                	if(DEBUG) Log.i(LOG_TAG, "MESSAGE_STATE_CHANGE/STATE_NONE");
-	                	if (mMenuItemConnect != null) {
-	                		mMenuItemConnect.setIcon(android.R.drawable.ic_menu_search);
-	                		mMenuItemConnect.setTitle(R.string.connect);
-	                	}
+	private final Handler mHandlerBT = new Handler() {
 
-	            		//I have to replace this line with whatever I am using as an input to the bluetooth device
-	//-----                	mInputManager.hideSoftInputFromWindow(mEmulatorView.getWindowToken(), 0);
-	                	bluetoothNameLabel.setText(R.string.title_not_connected);
-                		bluetoothEnabled = false;
-	                	if(DEBUG) Log.i(LOG_TAG, "MESSAGE_STATE_CHANGE/STATE_CONNECTED/CACA");
+		@Override
+		public void handleMessage(Message msg) {
+			switch (msg.what) {
+			case MESSAGE_STATE_CHANGE:
+				if(DEBUG) Log.i(LOG_TAG, "MESSAGE_STATE_CHANGE: " + msg.arg1);
+				switch (msg.arg1) {
+				case BluetoothSerialService.STATE_CONNECTED:
+					if(DEBUG) Log.i(LOG_TAG, "MESSAGE_STATE_CHANGE/STATE_CONNECTED");
+					if (mMenuItemConnect != null) {
+						mMenuItemConnect.setIcon(android.R.drawable.ic_menu_close_clear_cancel);
+						mMenuItemConnect.setTitle(R.string.disconnect);
+					}
 
-	                    break;
-	                }
-	                break;
-	            case MESSAGE_WRITE:
-	            	if(DEBUG) Log.i(LOG_TAG, "MESSAGE_WRITE " + msg.arg1);
-	            	if (mLocalEcho) {
-	            		byte[] writeBuf = (byte[]) msg.obj;
-	            		//mEmulatorView.write(writeBuf, msg.arg1);
-	            	}
-	                
-	                break;
-	                
-	            case MESSAGE_READ:
-	            	if(DEBUG) Log.i(LOG_TAG, "MESSAGE_READ " + msg.arg1);
-	            	byte[] readBuf = (byte[]) msg.obj;              
-	                //mEmulatorView.write(readBuf, msg.arg1);
-	                
-	                break;
-	                
-	            case MESSAGE_DEVICE_NAME:
-	            	if(DEBUG) Log.i(LOG_TAG, "MESSAGE_DEVICE_NAME: " + msg.arg1);
-	            	// save the connected device's name
-	                mConnectedDeviceName = msg.getData().getString(DEVICE_NAME);
-	                Toast.makeText(getApplicationContext(), "Connected to "
-	                               + mConnectedDeviceName, Toast.LENGTH_SHORT).show();
-	                break;
-	            case MESSAGE_TOAST:
-	            	if(DEBUG) Log.i(LOG_TAG, "MESSAGE_TOAST: " + msg.arg1);
-	            	Toast.makeText(getApplicationContext(), msg.getData().getString(TOAST),
-	                               Toast.LENGTH_SHORT).show();
-	                break;
-	            }
-	        }
-	    };
-	 
-    /*
-     * surfaceChanged() is automatically called whenever the screen changes,
-     * including when the app is started.
-     * 
-     * This method sets the camera to display the preview on mSurfaceView,
-     * sets the preview to the appropriate size,
-     * and starts the preview.
-     */
-    SurfaceHolder.Callback mCallback = new SurfaceHolder.Callback() {
+					//Replace my input variable to the bluetooth device below
+					//------           	mInputManager.showSoftInput(mEmulatorView, InputMethodManager.SHOW_IMPLICIT);
+
+					bluetoothNameLabel.setText(R.string.title_connected_to);
+					bluetoothNameLabel.append(mConnectedDeviceName);
+					bluetoothEnabled = true;
+					break;
+
+				case BluetoothSerialService.STATE_CONNECTING:
+					if(DEBUG) Log.i(LOG_TAG, "MESSAGE_STATE_CHANGE/STATE_CONNECTING");
+					bluetoothNameLabel.setText(R.string.title_connecting);
+					break;
+
+				case BluetoothSerialService.STATE_LISTEN:
+					if(DEBUG) Log.i(LOG_TAG, "MESSAGE_STATE_CHANGE/STATE_LISTEN");
+				case BluetoothSerialService.STATE_NONE:
+					if(DEBUG) Log.i(LOG_TAG, "MESSAGE_STATE_CHANGE/STATE_NONE");
+					if (mMenuItemConnect != null) {
+						mMenuItemConnect.setIcon(android.R.drawable.ic_menu_search);
+						mMenuItemConnect.setTitle(R.string.connect);
+					}
+
+					//I have to replace this line with whatever I am using as an input to the bluetooth device
+					//-----                	mInputManager.hideSoftInputFromWindow(mEmulatorView.getWindowToken(), 0);
+					bluetoothNameLabel.setText(R.string.title_not_connected);
+					bluetoothEnabled = false;
+					if(DEBUG) Log.i(LOG_TAG, "MESSAGE_STATE_CHANGE/STATE_CONNECTED/CACA");
+
+					break;
+				}
+				break;
+			case MESSAGE_WRITE:
+				if(DEBUG) Log.i(LOG_TAG, "MESSAGE_WRITE " + msg.arg1);
+				if (mLocalEcho) {
+					byte[] writeBuf = (byte[]) msg.obj;
+					//mEmulatorView.write(writeBuf, msg.arg1);
+				}
+
+				break;
+
+			case MESSAGE_READ:
+				if(DEBUG) Log.i(LOG_TAG, "MESSAGE_READ " + msg.arg1);
+				byte[] readBuf = (byte[]) msg.obj;
+				//mEmulatorView.write(readBuf, msg.arg1);
+
+				break;
+
+			case MESSAGE_DEVICE_NAME:
+				if(DEBUG) Log.i(LOG_TAG, "MESSAGE_DEVICE_NAME: " + msg.arg1);
+				// save the connected device's name
+				mConnectedDeviceName = msg.getData().getString(DEVICE_NAME);
+				Toast.makeText(getApplicationContext(), "Connected to "
+						+ mConnectedDeviceName, Toast.LENGTH_SHORT).show();
+				break;
+			case MESSAGE_TOAST:
+				if(DEBUG) Log.i(LOG_TAG, "MESSAGE_TOAST: " + msg.arg1);
+				Toast.makeText(getApplicationContext(), msg.getData().getString(TOAST),
+						Toast.LENGTH_SHORT).show();
+				break;
+			}
+		}
+	};
+
+	/*
+	 * surfaceChanged() is automatically called whenever the screen changes,
+	 * including when the app is started.
+	 * 
+	 * This method sets the camera to display the preview on mSurfaceView,
+	 * sets the preview to the appropriate size,
+	 * and starts the preview.
+	 */
+	SurfaceHolder.Callback mCallback = new SurfaceHolder.Callback() {
 		public void surfaceCreated(SurfaceHolder holder) {}
 		public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
 			if (previewRunning)
@@ -254,85 +256,86 @@ public class CameraActivity extends Activity implements TouchZoomControl.Zoomabl
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			
+
 			mCamera.setParameters(parameters);*/
-		    startCameraPreview();
+			startCameraPreview();
 		}
-		
+
 		public void surfaceDestroyed(SurfaceHolder holder) {}
 	};
-	
-	
+
+
 	/**
 	 * Called as the picture is being taken. Contains code for saving the picture data to an image file.
 	 */
 	PictureCallback mPicture = new PictureCallback() {
-	    public void onPictureTaken(byte[] data, Camera camera) {
-	        File fileName = getOutputMediaFile(MEDIA_TYPE_IMAGE);
-	        if (fileName == null){
-	            System.out.println("Error creating media file, check storage permissions: ");
-	            return;
-	        }
-	        Log.i(TAG, "Saving a bitmap to file: " + fileName.getPath());
-            Bitmap picture = BitmapFactory.decodeByteArray(data, 0, data.length);
-            try {
-                FileOutputStream out = new FileOutputStream(fileName);
-                picture.compress(Bitmap.CompressFormat.JPEG, COMPRESSION_QUALITY, out);
-                picture.recycle();
-                out.close();
-                toast("Picture saved as " + fileName.getName());
-//             	FileOutputStream fos = new FileOutputStream(fileName);
-// 	            fos.write(data);
-// 	            fos.close();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-	        stopCameraPreview();
-	        startCameraPreview();
-	        cameraBusy = false;
-	    }
+		public void onPictureTaken(byte[] data, Camera camera) {
+			File fileName = getOutputMediaFile(MEDIA_TYPE_IMAGE);
+			if (fileName == null){
+				System.out.println("Error creating media file, check storage permissions: ");
+				return;
+			}
+			Log.i(TAG, "Saving a bitmap to file: " + fileName.getPath());
+			Bitmap picture = BitmapFactory.decodeByteArray(data, 0, data.length);
+			try {
+				FileOutputStream out = new FileOutputStream(fileName);
+				picture.compress(Bitmap.CompressFormat.JPEG, COMPRESSION_QUALITY, out);
+				picture.recycle();
+				out.close();
+				toast("Picture saved as " + fileName.getName());
+				//             	FileOutputStream fos = new FileOutputStream(fileName);
+				// 	            fos.write(data);
+				// 	            fos.close();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			stopCameraPreview();
+			startCameraPreview();
+			cameraBusy = false;
+		}
 	};
-	
+
 	/*
 	 * onShutter() is called as the picture is taken.
 	 */
 	ShutterCallback mShutter = new ShutterCallback() {
 		public void onShutter() {
-			
+
 		}
 	};
-	
-	
+
+
 	public void panStage(int newState) {
 		if (bluetoothEnabled) {
 			byte[] buffer = new byte[1];
-        	buffer[0] = (byte)newState;
-        	mSerialService.write(buffer);
+			buffer[0] = (byte)newState;
+			mSerialService.write(buffer);
 		}
 	}
 
+	@Override
 	@SuppressWarnings("deprecation")
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        activity = this;
-        setContentView(R.layout.activity_camera);
-        mSurfaceView = (SurfaceView)findViewById(R.id.previewSurface);
-        CompoundTouchListener compoundTouch = new CompoundTouchListener();
-        compoundTouch.addTouchListener(new TouchZoomControl(this, ScreenDimension.getScreenWidth(this), ScreenDimension.getScreenHeight(this)));
-        mSurfaceView.setOnTouchListener(compoundTouch);
-        mHolder = mSurfaceView.getHolder();
-	    mHolder.addCallback(mCallback);
-	    mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-	    zoomText = (TextView)findViewById(R.id.zoomtext);
-	   // RotateAnimation rotate= (RotateAnimation)AnimationUtils.loadAnimation(this,R.anim.rotate_textview);
-	    zoomText.setText("100%");
-	   // zoomText.setAnimation(rotate);
-	    takePhoto = (ImageButton)findViewById(R.id.takePhotoButton);
-	    switchMode = (ImageButton)findViewById(R.id.switchCameraMode);
-	    zoomIn = (ImageButton)findViewById(R.id.zoomInButton);
-	    zoomOut = (ImageButton)findViewById(R.id.zoomOutButton);
-	    
-	    mSerialService = new BluetoothSerialService(this, mHandlerBT/*, mEmulatorView*/);
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		activity = this;
+		setContentView(R.layout.activity_camera);
+		mSurfaceView = (SurfaceView)findViewById(R.id.previewSurface);
+		CompoundTouchListener compoundTouch = new CompoundTouchListener();
+		compoundTouch.addTouchListener(new TouchZoomControl(this, ScreenDimension.getScreenWidth(this), ScreenDimension.getScreenHeight(this)));
+		mSurfaceView.setOnTouchListener(compoundTouch);
+		mHolder = mSurfaceView.getHolder();
+		mHolder.addCallback(mCallback);
+		mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+		zoomText = (TextView)findViewById(R.id.zoomtext);
+		// RotateAnimation rotate= (RotateAnimation)AnimationUtils.loadAnimation(this,R.anim.rotate_textview);
+		zoomText.setText("100%");
+		// zoomText.setAnimation(rotate);
+		takePhoto = (ImageButton)findViewById(R.id.takePhotoButton);
+		switchMode = (ImageButton)findViewById(R.id.switchCameraMode);
+		zoomIn = (ImageButton)findViewById(R.id.zoomInButton);
+		zoomOut = (ImageButton)findViewById(R.id.zoomOutButton);
+
+		mSerialService = new BluetoothSerialService(this, mHandlerBT/*, mEmulatorView*/);
 
 
 		bluetoothNameLabel = (TextView) findViewById(R.id.bluetoothtext);
@@ -342,51 +345,54 @@ public class CameraActivity extends Activity implements TouchZoomControl.Zoomabl
 		if (mBluetoothAdapter == null){
 			mMenuItemConnect.setEnabled(false);
 		}
-		
-		
-    }
-    
-    @Override
-    public void onStart() {
-    	super.onStart();
+
+
+	}
+
+	@Override
+	public void onStart() {
+		super.onStart();
 		mEnablingBT = false;
 		forceUpdateCamera = false;
-    }
-    /*
-     * This is automatically called when the application is opened
-     * or resumed.
-     */
-    public void onResume() {
-    	super.onResume();
-    	if (!safeCameraOpen())
-    		return;
-    	/* Set up the camera parameters. Not doing this will cause the preview to stay black.
-    	 * Usually this is done in surfaceChanged in SurfaceHolder.Callback,
-    	 * but surfaceChange is not called when resuming from non-fullscreen Activities such as dialogs.
-    	 * Setting forceUpdateCamera to true whenever these kinds of Activities completes gets around this*/
-    	if (forceUpdateCamera) {
-    		setCameraParameters();
-    		forceUpdateCamera = false;
-    	}
+	}
+	/*
+	 * This is automatically called when the application is opened
+	 * or resumed.
+	 */
+	@Override
+	public void onResume() {
+		super.onResume();
+		if (!safeCameraOpen())
+			return;
+		/* Set up the camera parameters. Not doing this will cause the preview to stay black.
+		 * Usually this is done in surfaceChanged in SurfaceHolder.Callback,
+		 * but surfaceChange is not called when resuming from non-fullscreen Activities such as dialogs.
+		 * Setting forceUpdateCamera to true whenever these kinds of Activities completes gets around this*/
+		if (forceUpdateCamera) {
+			setCameraParameters();
+			forceUpdateCamera = false;
+		}
 		startCameraPreview();
-    }
-    
-    public void onPause() {
-    	super.onPause();
-    	if (recording)
-    		stopRecording();
-    	stopCameraPreview();
-    	releaseCameraAndPreview();
-    }
-    
-    public void onDestroy() {
-    	super.onDestroy();
-        if (mSerialService != null)
-        	mSerialService.stop();
-    }
-    
-    private void setCameraParameters() {
-    	Camera.Parameters parameters = mCamera.getParameters();
+	}
+
+	@Override
+	public void onPause() {
+		super.onPause();
+		if (recording)
+			stopRecording();
+		stopCameraPreview();
+		releaseCameraAndPreview();
+	}
+
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
+		if (mSerialService != null)
+			mSerialService.stop();
+	}
+
+	private void setCameraParameters() {
+		Camera.Parameters parameters = mCamera.getParameters();
 		try {
 			int rotation = 0;
 			mCamera.setDisplayOrientation(rotation);
@@ -396,35 +402,35 @@ public class CameraActivity extends Activity implements TouchZoomControl.Zoomabl
 			e.printStackTrace();
 		}
 		mCamera.setParameters(parameters);
-    }
-    
-    boolean safeCameraOpen() {
-        boolean qOpened = false;
-        try {
-            releaseCameraAndPreview();
-            mCamera = Camera.open(); /* This is the important thing!
+	}
+
+	boolean safeCameraOpen() {
+		boolean qOpened = false;
+		try {
+			releaseCameraAndPreview();
+			mCamera = Camera.open(); /* This is the important thing!
             							It makes an instance of a Camera object that
             							lets the application do stuff with the hardware.
-            							*/
-            qOpened = (mCamera != null);
-        } catch (Exception e) {
-            Log.e(activity.getString(R.string.app_name), "failed to open Camera");
-            e.printStackTrace();
-        }
-        return qOpened;    
-    }
+			 */
+			qOpened = (mCamera != null);
+		} catch (Exception e) {
+			Log.e(activity.getString(R.string.app_name), "failed to open Camera");
+			e.printStackTrace();
+		}
+		return qOpened;
+	}
 
-    private void releaseCameraAndPreview() {
-        if (mCamera != null) {
-            mCamera.release();
-            mCamera = null;
-        }
-    }
-    
-    /*
-     * Returns the best size that the camera preview should be, based
-     * on the size of the screen.
-     */
+	private void releaseCameraAndPreview() {
+		if (mCamera != null) {
+			mCamera.release();
+			mCamera = null;
+		}
+	}
+
+	/*
+	 * Returns the best size that the camera preview should be, based
+	 * on the size of the screen.
+	 */
 	static Camera.Size getPreviewSize(Camera.Parameters parameters, int width, int height) {
 		Camera.Size result = null;
 		for (Camera.Size current: parameters.getSupportedPreviewSizes()) {
@@ -439,53 +445,53 @@ public class CameraActivity extends Activity implements TouchZoomControl.Zoomabl
 	}
 	/** Create a file Uri for saving an image or video */
 	public static Uri getOutputMediaFileUri(int type){
-	      return Uri.fromFile(getOutputMediaFile(type));
+		return Uri.fromFile(getOutputMediaFile(type));
 	}
 
 	/** Create a File for saving an image or video */
 	public static File getOutputMediaFile(int type){
-	    // To be safe, you should check that the SDCard is mounted
-	    // using Environment.getExternalStorageState() before doing this.
+		// To be safe, you should check that the SDCard is mounted
+		// using Environment.getExternalStorageState() before doing this.
 
-	    
-	    // This location works best if you want the created images to be shared
-	    // between applications and persist after your app has been uninstalled.
 
-	    // Create the storage directory if it does not exist
-	    if (! mediaStorageDir.exists()){
-	        if (! mediaStorageDir.mkdirs()){
-	            Log.d("MyCameraApp", "failed to create directory");
-	            return null;
-	        }
-	    }
+		// This location works best if you want the created images to be shared
+		// between applications and persist after your app has been uninstalled.
 
-	    // Create a media file name
-	    String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-	    File mediaFile;
-	    if (type == MEDIA_TYPE_IMAGE){
-	        mediaFile = new File(mediaStorageDir.getPath() + File.separator +
-	        "IMG_"+ timeStamp + ".jpg");
-	    } else if(type == MEDIA_TYPE_VIDEO) {
-	        mediaFile = new File(videoStorageDir.getPath() + File.separator +
-	        "VID_"+ timeStamp + ".mp4");
-	    } else {
-	        return null;
-	    }
+		// Create the storage directory if it does not exist
+		if (! mediaStorageDir.exists()){
+			if (! mediaStorageDir.mkdirs()){
+				Log.d("MyCameraApp", "failed to create directory");
+				return null;
+			}
+		}
 
-	    return mediaFile;
+		// Create a media file name
+		String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+		File mediaFile;
+		if (type == MEDIA_TYPE_IMAGE){
+			mediaFile = new File(mediaStorageDir.getPath() + File.separator +
+					"IMG_"+ timeStamp + ".jpg");
+		} else if(type == MEDIA_TYPE_VIDEO) {
+			mediaFile = new File(videoStorageDir.getPath() + File.separator +
+					"VID_"+ timeStamp + ".mp4");
+		} else {
+			return null;
+		}
+
+		return mediaFile;
 	}
-	
+
 	public void startCameraPreview() {
 		mCamera.startPreview();
 		previewRunning = true;
 	}
-	
+
 	public void stopCameraPreview() {
 		if (mCamera != null)
 			mCamera.stopPreview();
 		previewRunning = false;
 	}
-	
+
 	public synchronized void takePhoto(View v) {
 		System.out.println("take photo - " + cameraBusy);
 		if (cameraBusy)
@@ -511,7 +517,7 @@ public class CameraActivity extends Activity implements TouchZoomControl.Zoomabl
 			}
 		}
 	}
-	
+
 	private void startRecording() {
 		if (cameraBusy)
 			return;
@@ -541,7 +547,7 @@ public class CameraActivity extends Activity implements TouchZoomControl.Zoomabl
 		}
 		cameraBusy = false;
 	}
-	
+
 	private void stopRecording() {
 		System.out.println(cameraBusy + " " + recording);
 		if (cameraBusy || !recording)
@@ -559,7 +565,7 @@ public class CameraActivity extends Activity implements TouchZoomControl.Zoomabl
 
 		System.out.println("stop - lock disabled");
 	}
-	
+
 	public void zoom(int step) {
 		Camera.Parameters parameters = mCamera.getParameters();
 		if (!parameters.isZoomSupported())
@@ -574,7 +580,7 @@ public class CameraActivity extends Activity implements TouchZoomControl.Zoomabl
 		zoomText.setText(str);
 		mCamera.setParameters(parameters);
 	}
-	
+
 	public void zoomIn(View view) {
 		if (cameraBusy)
 			return;
@@ -585,7 +591,7 @@ public class CameraActivity extends Activity implements TouchZoomControl.Zoomabl
 			return;
 		zoom(-10);
 	}
-	
+
 	public void switchMode(View view) {
 		if (recording || cameraBusy)
 			return;
@@ -599,112 +605,113 @@ public class CameraActivity extends Activity implements TouchZoomControl.Zoomabl
 			takePhoto.setImageResource(R.drawable.camera);
 		}
 	}
-	
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.menu_bluetooth, menu);
-        mMenuItemConnect = menu.getItem(0);
-        return true;
-    }
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-        case R.id.connect:
-        	proceedWithConnection = true;
-        	if (getConnectionState() == BluetoothSerialService.STATE_NONE) {
-        		if (!mEnablingBT) { // If we are turning on the BT we cannot check if it's enable
-        		    if ( (mBluetoothAdapter != null)  && (!mBluetoothAdapter.isEnabled()) ) {
-                		proceedWithConnection = false;           	
-                        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                        builder.setMessage(R.string.alert_dialog_turn_on_bt)
-                            .setIcon(android.R.drawable.ic_dialog_alert)
-                            .setTitle(R.string.alert_dialog_warning_title)
-                            .setCancelable( false )
-                            .setPositiveButton(R.string.alert_dialog_yes, new DialogInterface.OnClickListener() {
-                            	public void onClick(DialogInterface dialog, int id) {
-                            		mEnablingBT = true;
-                            		Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                            		startActivityForResult(enableIntent, REQUEST_ENABLE_BT);			
-                            	}
-                            })
-                            .setNegativeButton(R.string.alert_dialog_no, new DialogInterface.OnClickListener() {
-                            	public void onClick(DialogInterface dialog, int id) {
-                            	}
-                            });
-                        AlertDialog alert = builder.create();
-                        alert.show();
-        		    }		
-        		
-        		    if (mSerialService != null) {
-        		    	// Only if the state is STATE_NONE, do we know that we haven't started already
-        		    	if (mSerialService.getState() == BluetoothSerialService.STATE_NONE) {
-        		    		// Start the Bluetooth chat services
-        		    		mSerialService.start();
-        		    	}
-        		    }
-        		}
-        		if (proceedWithConnection) {
-	        		// Launch the DeviceListActivity to see devices and do scan
-	        		Intent serverIntent = new Intent(this, DeviceListActivity.class);
-	        		startActivityForResult(serverIntent, REQUEST_CONNECT_DEVICE);
-        		}
-        	}
-        	else
-            	if (getConnectionState() == BluetoothSerialService.STATE_CONNECTED) {
-            		mSerialService.stop();
-		    		mSerialService.start();
-            	}
-            return true;
-        //case R.id.preferences:
-        	//doPreferences();
-            //return true;
-        //case R.id.menu_special_keys:
-            //doDocumentKeys();
-            //return true;
-        }
-        return false;
-    }
-    
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if(DEBUG) Log.d(LOG_TAG, "onActivityResult " + resultCode);
-        switch (requestCode) {
-        
-        case REQUEST_CONNECT_DEVICE:
-            forceUpdateCamera = true;
-            // When DeviceListActivity returns with a device to connect
-            if (resultCode == Activity.RESULT_OK) {
-                // Get the device MAC address
-                String address = data.getExtras()
-                                     .getString(DeviceListActivity.EXTRA_DEVICE_ADDRESS);
-                // Get the BLuetoothDevice object
-                BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address); //I deleted "m." before the method getRemoteDevice()
-                // Attempt to connect to the device
-                mSerialService.connect(device);
-            }
-            break;
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		MenuInflater inflater = getMenuInflater();
+		inflater.inflate(R.menu.menu_bluetooth, menu);
+		mMenuItemConnect = menu.getItem(0);
+		return true;
+	}
 
-        case REQUEST_ENABLE_BT:
-            // When the request to enable Bluetooth returns
-            if (resultCode != Activity.RESULT_OK) {
-                Log.d(LOG_TAG, "BT not enabled");
-                forceUpdateCamera = true;
-                mEnablingBT = false;
-                //finishDialogNoBluetooth();                
-            }
-            else {
-            	Intent serverIntent = new Intent(this, DeviceListActivity.class);
-            	startActivityForResult(serverIntent, REQUEST_CONNECT_DEVICE);
-            }
-        }
-    }
-    
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+		case R.id.connect:
+			proceedWithConnection = true;
+			if (getConnectionState() == BluetoothSerialService.STATE_NONE) {
+				if (!mEnablingBT) { // If we are turning on the BT we cannot check if it's enable
+					if ( (mBluetoothAdapter != null)  && (!mBluetoothAdapter.isEnabled()) ) {
+						proceedWithConnection = false;
+						AlertDialog.Builder builder = new AlertDialog.Builder(this);
+						builder.setMessage(R.string.alert_dialog_turn_on_bt)
+						.setIcon(android.R.drawable.ic_dialog_alert)
+						.setTitle(R.string.alert_dialog_warning_title)
+						.setCancelable( false )
+						.setPositiveButton(R.string.alert_dialog_yes, new DialogInterface.OnClickListener() {
+							public void onClick(DialogInterface dialog, int id) {
+								mEnablingBT = true;
+								Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+								startActivityForResult(enableIntent, REQUEST_ENABLE_BT);
+							}
+						})
+						.setNegativeButton(R.string.alert_dialog_no, new DialogInterface.OnClickListener() {
+							public void onClick(DialogInterface dialog, int id) {
+							}
+						});
+						AlertDialog alert = builder.create();
+						alert.show();
+					}
+
+					if (mSerialService != null) {
+						// Only if the state is STATE_NONE, do we know that we haven't started already
+						if (mSerialService.getState() == BluetoothSerialService.STATE_NONE) {
+							// Start the Bluetooth chat services
+							mSerialService.start();
+						}
+					}
+				}
+				if (proceedWithConnection) {
+					// Launch the DeviceListActivity to see devices and do scan
+					Intent serverIntent = new Intent(this, DeviceListActivity.class);
+					startActivityForResult(serverIntent, REQUEST_CONNECT_DEVICE);
+				}
+			}
+			else
+				if (getConnectionState() == BluetoothSerialService.STATE_CONNECTED) {
+					mSerialService.stop();
+					mSerialService.start();
+				}
+			return true;
+			//case R.id.preferences:
+			//doPreferences();
+			//return true;
+			//case R.id.menu_special_keys:
+			//doDocumentKeys();
+			//return true;
+		}
+		return false;
+	}
+
+	@Override
+	public void onActivityResult(int requestCode, int resultCode, Intent data) {
+		if(DEBUG) Log.d(LOG_TAG, "onActivityResult " + resultCode);
+		switch (requestCode) {
+
+		case REQUEST_CONNECT_DEVICE:
+			forceUpdateCamera = true;
+			// When DeviceListActivity returns with a device to connect
+			if (resultCode == Activity.RESULT_OK) {
+				// Get the device MAC address
+				String address = data.getExtras()
+						.getString(DeviceListActivity.EXTRA_DEVICE_ADDRESS);
+				// Get the BLuetoothDevice object
+				BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address); //I deleted "m." before the method getRemoteDevice()
+				// Attempt to connect to the device
+				mSerialService.connect(device);
+			}
+			break;
+
+		case REQUEST_ENABLE_BT:
+			// When the request to enable Bluetooth returns
+			if (resultCode != Activity.RESULT_OK) {
+				Log.d(LOG_TAG, "BT not enabled");
+				forceUpdateCamera = true;
+				mEnablingBT = false;
+				//finishDialogNoBluetooth();
+			}
+			else {
+				Intent serverIntent = new Intent(this, DeviceListActivity.class);
+				startActivityForResult(serverIntent, REQUEST_CONNECT_DEVICE);
+			}
+		}
+	}
+
 	public int getConnectionState() {
 		return mSerialService.getState();
 	}
-	
+
 
 	private void toast(String message) {
 		Context context = getApplicationContext();
@@ -716,12 +723,12 @@ public class CameraActivity extends Activity implements TouchZoomControl.Zoomabl
 	public double getDiagonal() {
 		return ScreenDimension.getScreenDiagonal(this);
 	}
-	
+
 	public int getMaxZoom() {
 		Camera.Parameters parameters = mCamera.getParameters();
 		if (!parameters.isZoomSupported())
 			return 0;
 		return parameters.getMaxZoom();
 	}
-	
+
 }

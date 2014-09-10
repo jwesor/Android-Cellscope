@@ -7,7 +7,7 @@ import org.opencv.core.Rect;
 import edu.berkeley.cellscope.cscore.celltracker.MathUtils;
 
 /**
- * Contains data for each individual field of view.
+ * Contains data for each individual field of view at a certain time.
  */
 public class MobileFov {
 	private Mat image;			//snapshot of the fov
@@ -33,6 +33,7 @@ public class MobileFov {
 		return location;
 	}
 	
+	//Get the displacement from this fov's center to otherLocation.
 	public Point getOffset(Point otherLocation) {
 		Point offset = new Point();
 		MathUtils.set(offset, location, otherLocation);

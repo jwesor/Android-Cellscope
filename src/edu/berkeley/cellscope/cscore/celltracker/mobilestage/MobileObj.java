@@ -17,8 +17,8 @@ import edu.berkeley.cellscope.cscore.celltracker.MathUtils;
 public class MobileObj {
 	private List<PathData> path; //absolute position of the object
 	private Size size;			//width/height dimensions
-	private Point relLocation;		//locatin fo the center within the current fov
-	private Point absLocation;		//absolute location
+	private Point relLocation;		//locatin of the center within the current fov
+	private Point absLocation;		//absolute location on the slide
 	private boolean absLocKnown; //true if location has been calculated and hasn't changed
 	private MobileFov fov; 		//current fov that the object was seen in
 	private Mat image;			//last-updated image of the object
@@ -49,6 +49,7 @@ public class MobileObj {
 		return relLocation;
 	}
 	
+	//Return true if FOV is this object's current fov.
 	public boolean currentFov(MobileFov fov) {
 		return this.fov == fov;
 	}
