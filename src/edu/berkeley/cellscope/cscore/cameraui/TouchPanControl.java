@@ -4,13 +4,13 @@ import android.view.MotionEvent;
 
 /*
  * Touch listener that responds to single-finger gestures.
- * 
+ *
  * Sliding a finger in one direction will cause the stage to move in that direction. The panning
  * will not stop until the finger is released.
  */
 
 public class TouchPanControl extends TouchControl {
-	private BluetoothControllable stage;
+	private DeviceConnectable stage;
 	private double touchX, touchY;
 	private double zZone;
 	private int panState;
@@ -19,7 +19,7 @@ public class TouchPanControl extends TouchControl {
 	private static final double PAN_THRESHOLD = 50; //Gestures smaller than this are ignored.
 	private static final double Z_CONTROL_ZONE = 0.3; //Gestures left of this part of the screen are used to control Z
 
-	public TouchPanControl(BluetoothControllable p, int w, int h) {
+	public TouchPanControl(DeviceConnectable p, int w, int h) {
 		super(w, h);
 		stage = p;
 		zZone = screenWidth * Z_CONTROL_ZONE;
@@ -31,7 +31,7 @@ public class TouchPanControl extends TouchControl {
 		int action = event.getActionMasked();
 		int newState = stopMotor;
 
-		if (stage.controlReady() && pointers == 1) {
+		if (stage.isReadyForWrite() && pointers == 1) {
 			if (action == MotionEvent.ACTION_DOWN) {
 				touchX = event.getX();
 				touchY = event.getY();
@@ -47,11 +47,13 @@ public class TouchPanControl extends TouchControl {
 					//newState = x > 0 ? PannableStage.xRightMotor : PannableStage.xLeftMotor;
 				}
 				else if (absY > absX && absY > PAN_THRESHOLD) {
-					if (touchX < zZone)
+					if (touchX < zZone) {
 						newState = y > 0 ? zPositive : zNegative;
-						else
-							newState = y > 0 ? yPositive : yNegative;
-							//newState = y > 0 ? PannableStage.yForwardMotor : PannableStage.yBackMotor;
+					}
+					else {
+						newState = y > 0 ? yPositive : yNegative;
+						//newState = y > 0 ? PannableStage.yForwardMotor : PannableStage.yBackMotor;
+					}
 				}
 			}
 			else if (action == MotionEvent.ACTION_UP) {
@@ -69,13 +71,7 @@ public class TouchPanControl extends TouchControl {
 
 
 	public void panStage(int newState) {
-		System.out.println("pan " + newState);
-		BluetoothConnector bt = stage.getBluetooth();
-		byte[] buffer = new byte[1];
-		buffer[0] = (byte)newState;
-		bt.write(buffer);
-		byte[] buffer2 = new byte[1];
-		buffer2[0] = (byte)0;
-		bt.write(buffer2);
+		stage.writeByte((byte)newState);
+		stage.writeByte((byte)0);
 	}
 }

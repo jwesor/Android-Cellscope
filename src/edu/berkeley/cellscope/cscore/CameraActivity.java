@@ -127,10 +127,12 @@ public class CameraActivity extends Activity implements TouchZoomControl.Zoomabl
 	public static File mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "MyCameraApp");
 	public static File videoStorageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "MyVideoApp");
 	static {
-		if (!mediaStorageDir.exists())
+		if (!mediaStorageDir.exists()) {
 			mediaStorageDir.mkdirs();
-		if (!videoStorageDir.exists())
+		}
+		if (!videoStorageDir.exists()) {
 			videoStorageDir.mkdirs();
+		}
 	}
 
 	// The Handler that gets information back from the BluetoothService
@@ -140,10 +142,14 @@ public class CameraActivity extends Activity implements TouchZoomControl.Zoomabl
 		public void handleMessage(Message msg) {
 			switch (msg.what) {
 			case MESSAGE_STATE_CHANGE:
-				if(DEBUG) Log.i(LOG_TAG, "MESSAGE_STATE_CHANGE: " + msg.arg1);
+				if(DEBUG) {
+					Log.i(LOG_TAG, "MESSAGE_STATE_CHANGE: " + msg.arg1);
+				}
 				switch (msg.arg1) {
 				case BluetoothSerialService.STATE_CONNECTED:
-					if(DEBUG) Log.i(LOG_TAG, "MESSAGE_STATE_CHANGE/STATE_CONNECTED");
+					if(DEBUG) {
+						Log.i(LOG_TAG, "MESSAGE_STATE_CHANGE/STATE_CONNECTED");
+					}
 					if (mMenuItemConnect != null) {
 						mMenuItemConnect.setIcon(android.R.drawable.ic_menu_close_clear_cancel);
 						mMenuItemConnect.setTitle(R.string.disconnect);
@@ -158,14 +164,20 @@ public class CameraActivity extends Activity implements TouchZoomControl.Zoomabl
 					break;
 
 				case BluetoothSerialService.STATE_CONNECTING:
-					if(DEBUG) Log.i(LOG_TAG, "MESSAGE_STATE_CHANGE/STATE_CONNECTING");
+					if(DEBUG) {
+						Log.i(LOG_TAG, "MESSAGE_STATE_CHANGE/STATE_CONNECTING");
+					}
 					bluetoothNameLabel.setText(R.string.title_connecting);
 					break;
 
 				case BluetoothSerialService.STATE_LISTEN:
-					if(DEBUG) Log.i(LOG_TAG, "MESSAGE_STATE_CHANGE/STATE_LISTEN");
+					if(DEBUG) {
+						Log.i(LOG_TAG, "MESSAGE_STATE_CHANGE/STATE_LISTEN");
+					}
 				case BluetoothSerialService.STATE_NONE:
-					if(DEBUG) Log.i(LOG_TAG, "MESSAGE_STATE_CHANGE/STATE_NONE");
+					if(DEBUG) {
+						Log.i(LOG_TAG, "MESSAGE_STATE_CHANGE/STATE_NONE");
+					}
 					if (mMenuItemConnect != null) {
 						mMenuItemConnect.setIcon(android.R.drawable.ic_menu_search);
 						mMenuItemConnect.setTitle(R.string.connect);
@@ -175,36 +187,46 @@ public class CameraActivity extends Activity implements TouchZoomControl.Zoomabl
 					//-----                	mInputManager.hideSoftInputFromWindow(mEmulatorView.getWindowToken(), 0);
 					bluetoothNameLabel.setText(R.string.title_not_connected);
 					bluetoothEnabled = false;
-					if(DEBUG) Log.i(LOG_TAG, "MESSAGE_STATE_CHANGE/STATE_CONNECTED/CACA");
+					if(DEBUG) {
+						Log.i(LOG_TAG, "MESSAGE_STATE_CHANGE/STATE_CONNECTED/CACA");
+					}
 
 					break;
 				}
 				break;
 			case MESSAGE_WRITE:
-				if(DEBUG) Log.i(LOG_TAG, "MESSAGE_WRITE " + msg.arg1);
+				if(DEBUG) {
+					Log.i(LOG_TAG, "MESSAGE_WRITE " + msg.arg1);
+				}
 				if (mLocalEcho) {
-					byte[] writeBuf = (byte[]) msg.obj;
+					//byte[] writeBuf = (byte[]) msg.obj;
 					//mEmulatorView.write(writeBuf, msg.arg1);
 				}
 
 				break;
 
 			case MESSAGE_READ:
-				if(DEBUG) Log.i(LOG_TAG, "MESSAGE_READ " + msg.arg1);
-				byte[] readBuf = (byte[]) msg.obj;
+				if(DEBUG) {
+					Log.i(LOG_TAG, "MESSAGE_READ " + msg.arg1);
+				}
+				//byte[] readBuf = (byte[]) msg.obj;
 				//mEmulatorView.write(readBuf, msg.arg1);
 
 				break;
 
 			case MESSAGE_DEVICE_NAME:
-				if(DEBUG) Log.i(LOG_TAG, "MESSAGE_DEVICE_NAME: " + msg.arg1);
+				if(DEBUG) {
+					Log.i(LOG_TAG, "MESSAGE_DEVICE_NAME: " + msg.arg1);
+				}
 				// save the connected device's name
 				mConnectedDeviceName = msg.getData().getString(DEVICE_NAME);
 				Toast.makeText(getApplicationContext(), "Connected to "
 						+ mConnectedDeviceName, Toast.LENGTH_SHORT).show();
 				break;
 			case MESSAGE_TOAST:
-				if(DEBUG) Log.i(LOG_TAG, "MESSAGE_TOAST: " + msg.arg1);
+				if(DEBUG) {
+					Log.i(LOG_TAG, "MESSAGE_TOAST: " + msg.arg1);
+				}
 				Toast.makeText(getApplicationContext(), msg.getData().getString(TOAST),
 						Toast.LENGTH_SHORT).show();
 				break;
@@ -215,7 +237,7 @@ public class CameraActivity extends Activity implements TouchZoomControl.Zoomabl
 	/*
 	 * surfaceChanged() is automatically called whenever the screen changes,
 	 * including when the app is started.
-	 * 
+	 *
 	 * This method sets the camera to display the preview on mSurfaceView,
 	 * sets the preview to the appropriate size,
 	 * and starts the preview.
@@ -223,8 +245,9 @@ public class CameraActivity extends Activity implements TouchZoomControl.Zoomabl
 	SurfaceHolder.Callback mCallback = new SurfaceHolder.Callback() {
 		public void surfaceCreated(SurfaceHolder holder) {}
 		public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-			if (previewRunning)
+			if (previewRunning) {
 				stopCameraPreview();
+			}
 			setCameraParameters();
 			/*Display display = ((WindowManager)(activity.getSystemService(Context.WINDOW_SERVICE))).getDefaultDisplay();
 			Camera.Parameters parameters = mCamera.getParameters();
@@ -378,8 +401,9 @@ public class CameraActivity extends Activity implements TouchZoomControl.Zoomabl
 	@Override
 	public void onPause() {
 		super.onPause();
-		if (recording)
+		if (recording) {
 			stopRecording();
+		}
 		stopCameraPreview();
 		releaseCameraAndPreview();
 	}
@@ -387,8 +411,9 @@ public class CameraActivity extends Activity implements TouchZoomControl.Zoomabl
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
-		if (mSerialService != null)
+		if (mSerialService != null) {
 			mSerialService.stop();
+		}
 	}
 
 	private void setCameraParameters() {
@@ -435,10 +460,11 @@ public class CameraActivity extends Activity implements TouchZoomControl.Zoomabl
 		Camera.Size result = null;
 		for (Camera.Size current: parameters.getSupportedPreviewSizes()) {
 			if (current.width < width && current.height < height) {
-				if (result == null)
+				if (result == null) {
 					result = current;
-				else if (result.width * result.height < current.width * current.height)
+				} else if (result.width * result.height < current.width * current.height) {
 					result = current;
+				}
 			}
 		}
 		return result;
@@ -474,9 +500,8 @@ public class CameraActivity extends Activity implements TouchZoomControl.Zoomabl
 		} else if(type == MEDIA_TYPE_VIDEO) {
 			mediaFile = new File(videoStorageDir.getPath() + File.separator +
 					"VID_"+ timeStamp + ".mp4");
-		} else {
+		} else
 			return null;
-		}
 
 		return mediaFile;
 	}
@@ -487,8 +512,9 @@ public class CameraActivity extends Activity implements TouchZoomControl.Zoomabl
 	}
 
 	public void stopCameraPreview() {
-		if (mCamera != null)
+		if (mCamera != null) {
 			mCamera.stopPreview();
+		}
 		previewRunning = false;
 	}
 
@@ -571,10 +597,11 @@ public class CameraActivity extends Activity implements TouchZoomControl.Zoomabl
 		if (!parameters.isZoomSupported())
 			return;
 		int zoom = parameters.getZoom() + step;
-		if (zoom > parameters.getMaxZoom())
+		if (zoom > parameters.getMaxZoom()) {
 			zoom = parameters.getMaxZoom();
-		else if (zoom < 0)
+		} else if (zoom < 0) {
 			zoom = 0;
+		}
 		parameters.setZoom(zoom);
 		String str= parameters.getZoomRatios().get(zoom) + "%";
 		zoomText.setText(str);
@@ -676,7 +703,9 @@ public class CameraActivity extends Activity implements TouchZoomControl.Zoomabl
 
 	@Override
 	public void onActivityResult(int requestCode, int resultCode, Intent data) {
-		if(DEBUG) Log.d(LOG_TAG, "onActivityResult " + resultCode);
+		if(DEBUG) {
+			Log.d(LOG_TAG, "onActivityResult " + resultCode);
+		}
 		switch (requestCode) {
 
 		case REQUEST_CONNECT_DEVICE:

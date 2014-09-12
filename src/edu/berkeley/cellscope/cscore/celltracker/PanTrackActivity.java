@@ -69,16 +69,16 @@ public class PanTrackActivity extends OpenCVCameraActivity implements FovTracker
 	}
 
 	@Override
-	public void bluetoothConnected() {
-		super.bluetoothConnected();
+	public void deviceConnected() {
+		super.deviceConnected();
 		if (mMenuItemCalibrate != null) {
 			mMenuItemCalibrate.setEnabled(true);
 		}
 	}
 
 	@Override
-	public void bluetoothDisconnected() {
-		super.bluetoothDisconnected();
+	public void deviceDisconnected() {
+		super.deviceDisconnected();
 		if (mMenuItemCalibrate != null) {
 			//mMenuItemCalibrate.setEnabled(false);
 		}

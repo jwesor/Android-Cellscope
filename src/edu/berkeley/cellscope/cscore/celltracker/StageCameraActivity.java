@@ -15,7 +15,7 @@ import edu.berkeley.cellscope.cscore.cameraui.TouchSwipeControl;
 
 /*
  * Class for testing the stepper counter.
- * 
+ *
  * Observations: commands do not queue. Sending multiple commands at once
  * to the stage will cause the first command to be executed, but all commands' steps
  * to count down. When the first command is done executing (i.e. no more steps remaining),
@@ -43,8 +43,9 @@ public class StageCameraActivity extends OpenCVCameraActivity implements Autofoc
 		super.readMessage(msg);
 		byte[] buffer = (byte[])(msg.obj);
 		if (buffer.length > 0) {
-			if (autofocus.isRunning())
+			if (autofocus.isRunning()) {
 				autofocus.continueRunning();
+			}
 		}
 	}
 
@@ -57,10 +58,11 @@ public class StageCameraActivity extends OpenCVCameraActivity implements Autofoc
 	}
 
 	@Override
-	public void bluetoothConnected() {
-		super.bluetoothConnected();
-		if (mMenuItemAutofocus != null)
+	public void deviceConnected() {
+		super.deviceConnected();
+		if (mMenuItemAutofocus != null) {
 			mMenuItemAutofocus.setEnabled(true);
+		}
 		if (mMenuItemIllumination != null) {
 			mMenuItemIllumination.setEnabled(true);
 			illumination.enableIllumination();
@@ -68,10 +70,11 @@ public class StageCameraActivity extends OpenCVCameraActivity implements Autofoc
 	}
 
 	@Override
-	public void bluetoothDisconnected() {
-		super.bluetoothDisconnected();
-		if (mMenuItemAutofocus != null)
+	public void deviceDisconnected() {
+		super.deviceDisconnected();
+		if (mMenuItemAutofocus != null) {
 			mMenuItemAutofocus.setEnabled(false);
+		}
 		if (mMenuItemIllumination != null) {
 			mMenuItemIllumination.setEnabled(false);
 			illumination.disableIllumination();
@@ -79,8 +82,8 @@ public class StageCameraActivity extends OpenCVCameraActivity implements Autofoc
 	}
 
 	@Override
-	public boolean controlReady() {
-		return super.controlReady() && !autofocus.isRunning();
+	public boolean isReadyForWrite() {
+		return super.isReadyForWrite() && !autofocus.isRunning();
 	}
 
 	public void hideControls() {
@@ -122,9 +125,10 @@ public class StageCameraActivity extends OpenCVCameraActivity implements Autofoc
 	}
 
 	public void focusComplete(boolean success) {
-		if (success)
+		if (success) {
 			toast(Autofocus.SUCCESS_MESSAGE);
-		else
+		} else {
 			toast(Autofocus.FAILURE_MESSAGE);
+		}
 	}
 }

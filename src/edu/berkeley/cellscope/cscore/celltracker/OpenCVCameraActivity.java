@@ -31,19 +31,19 @@ import android.widget.Toast;
 import edu.berkeley.cellscope.cscore.CameraActivity;
 import edu.berkeley.cellscope.cscore.R;
 import edu.berkeley.cellscope.cscore.ScreenDimension;
-import edu.berkeley.cellscope.cscore.cameraui.BluetoothConnectable;
-import edu.berkeley.cellscope.cscore.cameraui.BluetoothConnector;
-import edu.berkeley.cellscope.cscore.cameraui.BluetoothControllable;
+import edu.berkeley.cellscope.cscore.cameraui.BluetoothDeviceConnection;
 import edu.berkeley.cellscope.cscore.cameraui.CompoundTouchListener;
+import edu.berkeley.cellscope.cscore.cameraui.DeviceConnectable;
+import edu.berkeley.cellscope.cscore.cameraui.DeviceConnection;
 import edu.berkeley.cellscope.cscore.cameraui.PinchSelectActivity;
 import edu.berkeley.cellscope.cscore.cameraui.TouchControl;
 import edu.berkeley.cellscope.cscore.cameraui.TouchExposureControl;
 import edu.berkeley.cellscope.cscore.cameraui.TouchPanControl;
 import edu.berkeley.cellscope.cscore.cameraui.TouchZoomControl;
 
-public class OpenCVCameraActivity extends Activity implements CvCameraViewListener2, BluetoothControllable, BluetoothConnectable, TouchZoomControl.Zoomable, TouchExposureControl.ManualExposure {
+public class OpenCVCameraActivity extends Activity implements CvCameraViewListener2, DeviceConnectable, TouchZoomControl.Zoomable, TouchExposureControl.ManualExposure {
 
-	BluetoothConnector btConnector;
+	DeviceConnection btConnector;
 	private static final String TAG = "OpenCV_Camera";
 
 	protected OpenCVCameraView cameraView;
@@ -108,7 +108,7 @@ public class OpenCVCameraActivity extends Activity implements CvCameraViewListen
 		bluetoothNameLabel = (TextView) findViewById(R.id.bluetoothtext);
 
 		firstFrame = true;
-		btConnector = new BluetoothConnector(this, this);
+		btConnector = new BluetoothDeviceConnection(this, this);
 
 		infoText = (TextView)findViewById(R.id.infotext);
 
@@ -139,23 +139,24 @@ public class OpenCVCameraActivity extends Activity implements CvCameraViewListen
 	@Override
 	public void onStart() {
 		super.onStart();
-		btConnector.onStart();
 	}
 
 	@Override
 	public void onPause()
 	{
 		super.onPause();
-		if (cameraView != null && !maintainCamera)
+		if (cameraView != null && !maintainCamera) {
 			cameraView.disableView();
-		else
+		} else {
 			maintainCamera = false;
+		}
 	}
 
 	public void stopImageProcessors() {
 		for (RealtimeImageProcessor processor: realtimeProcessors)
-			if (processor.isRunning())
+			if (processor.isRunning()) {
 				processor.stop();
+			}
 	}
 
 	@Override
@@ -167,16 +168,17 @@ public class OpenCVCameraActivity extends Activity implements CvCameraViewListen
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
-		if (cameraView != null)
+		if (cameraView != null) {
 			cameraView.disableView();
-		btConnector.stopBluetooth();
+		}
+		btConnector.stopConnection();
 	}
 
-	public void bluetoothUnavailable() {
+	public void deviceUnavailable() {
 		mMenuItemConnect.setEnabled(false);
 	}
 
-	public void bluetoothConnected() {
+	public void deviceConnected() {
 		if (mMenuItemConnect != null) {
 			mMenuItemConnect.setIcon(android.R.drawable.ic_menu_close_clear_cancel);
 			mMenuItemConnect.setTitle(R.string.disconnect);
@@ -186,7 +188,7 @@ public class OpenCVCameraActivity extends Activity implements CvCameraViewListen
 		//stepperThread.schedule(stepper, 0, TimeUnit.MILLISECONDS);
 	}
 
-	public void bluetoothDisconnected() {
+	public void deviceDisconnected() {
 		if (mMenuItemConnect != null) {
 			mMenuItemConnect.setIcon(android.R.drawable.ic_menu_search);
 			mMenuItemConnect.setTitle(R.string.connect);
@@ -214,26 +216,30 @@ public class OpenCVCameraActivity extends Activity implements CvCameraViewListen
 			initialFrame();
 			firstFrame = false;
 		}
-		if (record)
+		if (record) {
 			record();
+		}
 		processImage(mRgba);
 		return drawImageProcessors(mRgba);
 	}
 
 	protected void processImage(Mat mat) {
 		for (RealtimeImageProcessor processor: realtimeProcessors)
-			if (processor.isRunning())
+			if (processor.isRunning()) {
 				processor.processFrame(mat);
+			}
 	}
 
 	protected Mat drawImageProcessors(Mat mat) {
-		if (mRgbaDisplay == null)
+		if (mRgbaDisplay == null) {
 			mRgbaDisplay = mat.clone();
-		else
+		} else {
 			mat.copyTo(mRgbaDisplay);
+		}
 		for (RealtimeImageProcessor processor: realtimeProcessors)
-			if (processor.isRunning())
+			if (processor.isRunning()) {
 				processor.displayFrame(mRgbaDisplay);
+			}
 		return mRgbaDisplay;
 	}
 
@@ -248,13 +254,14 @@ public class OpenCVCameraActivity extends Activity implements CvCameraViewListen
 			if (timeElapsed > TIMELAPSE_INTERVAL) {
 				takePhoto();
 				timeElapsed -= TIMELAPSE_INTERVAL;
-				if (timeElapsed < 0)
+				if (timeElapsed < 0) {
 					timeElapsed = 0;
+				}
 			}
 			currentTime = newTime;
-		}
-		else
+		} else {
 			currentTime = System.currentTimeMillis();
+		}
 	}
 
 
@@ -313,16 +320,18 @@ public class OpenCVCameraActivity extends Activity implements CvCameraViewListen
 		infoText.setText(getString(R.string.exposure_label) + str);
 	}
 
-	public boolean controlReady() {
-		return btConnector.enabled();
-	}
-
-	public BluetoothConnector getBluetooth() {
+	public DeviceConnection getDeviceConnection() {
 		return btConnector;
 	}
 
 
 	public void readMessage(Message msg) {
+	}
+
+	public void writeByte(byte b) {
+		byte[] buffer = new byte[1];
+		buffer[0] = b;
+		btConnector.write(buffer);
 	}
 
 	@Override
@@ -340,7 +349,7 @@ public class OpenCVCameraActivity extends Activity implements CvCameraViewListen
 		int id = item.getItemId();
 		if (id == R.id.connect) {
 			maintainCamera = true;
-			btConnector.connectBluetooth();
+			btConnector.startConnection();
 			return true;
 		} else if (id == R.id.menu_pinch) {
 			maintainCamera = true;
@@ -353,10 +362,10 @@ public class OpenCVCameraActivity extends Activity implements CvCameraViewListen
 
 	@Override
 	public void onActivityResult(int requestCode, int resultCode, Intent data) {
-		if (requestCode == REQUEST_CONNECT_DEVICE) {
+		if (requestCode == DeviceConnection.REQUEST_CONNECT_DEVICE) {
 			btConnector.queryResultConnect(resultCode, data);
 		}
-		else if (requestCode == REQUEST_ENABLE_BT) {
+		else if (requestCode == DeviceConnection.REQUEST_ENABLE_BT) {
 			btConnector.queryResultEnabled(resultCode, data);
 		}
 
@@ -405,5 +414,9 @@ public class OpenCVCameraActivity extends Activity implements CvCameraViewListen
 			}
 
 		});
+	}
+
+	public boolean isReadyForWrite() {
+		return btConnector.isEnabled();
 	}
 }

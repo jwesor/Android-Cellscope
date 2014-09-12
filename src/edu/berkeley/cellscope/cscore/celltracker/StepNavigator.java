@@ -6,7 +6,7 @@ import java.util.List;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
 
-import edu.berkeley.cellscope.cscore.cameraui.BluetoothControllable;
+import edu.berkeley.cellscope.cscore.cameraui.DeviceConnectable;
 import edu.berkeley.cellscope.cscore.cameraui.TouchSwipeControl;
 
 /**
@@ -25,7 +25,7 @@ public class StepNavigator implements RealtimeImageProcessor, FovTracker.MotionC
 
 	private static final int STRIDE_SIZE = StepCalibrator.STRIDE_SIZE;
 
-	public StepNavigator(BluetoothControllable bt, int w, int h) {
+	public StepNavigator(DeviceConnectable bt, int w, int h) {
 		TouchSwipeControl ctrl = new TouchSwipeControl(bt, w, h);
 		StepCalibrator calib = new StepCalibrator(ctrl, w, h);
 		Autofocus focus = new Autofocus(ctrl);
@@ -99,19 +99,23 @@ public class StepNavigator implements RealtimeImageProcessor, FovTracker.MotionC
 	 */
 	public void processFrame(Mat mat) {
 		if (processSub) {
-			if (autofocus.isRunning())
+			if (autofocus.isRunning()) {
 				autofocus.processFrame(mat);
-			if (calibrator.isRunning())
+			}
+			if (calibrator.isRunning()) {
 				calibrator.processFrame(mat);
+			}
 		}
 	}
 
 	public void displayFrame(Mat mat) {
 		if (processSub) {
-			if (autofocus.isRunning())
+			if (autofocus.isRunning()) {
 				autofocus.displayFrame(mat);
-			if (calibrator.isRunning())
+			}
+			if (calibrator.isRunning()) {
 				calibrator.displayFrame(mat);
+			}
 		}
 	}
 

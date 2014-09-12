@@ -35,13 +35,10 @@ import android.util.Log;
  * incoming connections, a thread for connecting with a device, and a
  * thread for performing data transmissions when connected.
  */
-
-
-
 public class BluetoothSerialService {
 	// Debugging
 	private static final String TAG = "BluetoothReadService";
-	private static final boolean D = false;
+	private static final boolean D = false; //Set to true to enable debugging
 
 
 	private static final UUID SerialPortServiceClass_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
@@ -53,7 +50,6 @@ public class BluetoothSerialService {
 	private ConnectedThread mConnectedThread;
 	private int mState;
 
-	//    private EmulatorView mEmulatorView;
 
 	// Constants that indicate the current connection state
 	public static final int STATE_NONE = 0;       // we're doing nothing
@@ -70,7 +66,6 @@ public class BluetoothSerialService {
 		mAdapter = BluetoothAdapter.getDefaultAdapter();
 		mState = STATE_NONE;
 		mHandler = handler;
-		//        mEmulatorView = emulatorView;
 	}
 
 	/**
@@ -78,7 +73,9 @@ public class BluetoothSerialService {
 	 * @param state  An integer defining the current connection state
 	 */
 	private synchronized void setState(int state) {
-		if (D) Log.d(TAG, "setState() " + mState + " -> " + state);
+		if (D) {
+			Log.d(TAG, "setState() " + mState + " -> " + state);
+		}
 		mState = state;
 
 		// Give the new state to the Handler so the UI Activity can update
@@ -95,7 +92,9 @@ public class BluetoothSerialService {
 	 * Start the chat service. Specifically start AcceptThread to begin a
 	 * session in listening (server) mode. Called by the Activity onResume() */
 	public synchronized void start() {
-		if (D) Log.d(TAG, "start");
+		if (D) {
+			Log.d(TAG, "start");
+		}
 
 		// Cancel any thread attempting to make a connection
 		if (mConnectThread != null) {
@@ -117,7 +116,9 @@ public class BluetoothSerialService {
 	 * @param device  The BluetoothDevice to connect
 	 */
 	public synchronized void connect(BluetoothDevice device) {
-		if (D) Log.d(TAG, "connect to: " + device);
+		if (D) {
+			Log.d(TAG, "connect to: " + device);
+		}
 
 		// Cancel any thread attempting to make a connection
 		if (mState == STATE_CONNECTING) {
@@ -139,7 +140,9 @@ public class BluetoothSerialService {
 	 * @param device  The BluetoothDevice that has been connected
 	 */
 	public synchronized void connected(BluetoothSocket socket, BluetoothDevice device) {
-		if (D) Log.d(TAG, "connected");
+		if (D) {
+			Log.d(TAG, "connected");
+		}
 
 		// Cancel the thread that completed the connection
 		if (mConnectThread != null) {
@@ -171,8 +174,9 @@ public class BluetoothSerialService {
 	 * Stop all threads
 	 */
 	public synchronized void stop() {
-		if (D) Log.d(TAG, "stop");
-
+		if (D) {
+			Log.d(TAG, "stop");
+		}
 
 		if (mConnectThread != null) {
 			mConnectThread.cancel();
@@ -339,12 +343,8 @@ public class BluetoothSerialService {
 					// Read from the InputStream
 					bytes = mmInStream.read(buffer);
 
-					//                    mEmulatorView.write(buffer, bytes);
 					// Send the obtained bytes to the UI Activity
 					mHandler.obtainMessage(BluetoothActivity.MESSAGE_READ, bytes, -1, buffer).sendToTarget();
-
-					String a = buffer.toString();
-					a = "";
 				} catch (IOException e) {
 					Log.e(TAG, "disconnected", e);
 					connectionLost();

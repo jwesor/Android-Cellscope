@@ -13,9 +13,9 @@ import edu.berkeley.cellscope.cscore.R;
 import edu.berkeley.cellscope.cscore.bluetooth.BluetoothSerialService;
 import edu.berkeley.cellscope.cscore.bluetooth.DeviceListActivity;
 
-public class BluetoothConnector {
+public class BluetoothDeviceConnection implements DeviceConnection {
 	private Activity activity;
-	private BluetoothConnectable connectable;
+	private DeviceConnectable connectable;
 
 	//Bluetooth stuff
 	private static BluetoothSerialService mSerialService = null;
@@ -46,7 +46,7 @@ public class BluetoothConnector {
 	static final int REQUEST_CONNECT_DEVICE = 1;
 	static final int REQUEST_ENABLE_BT = 2;
 
-	public BluetoothConnector(Activity c, BluetoothConnectable b) {
+	public BluetoothDeviceConnection(Activity c, DeviceConnectable b) {
 		activity = c;
 		connectable = b;
 		mHandlerBT = new BluetoothHandler();
@@ -55,18 +55,19 @@ public class BluetoothConnector {
 		mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 		//BluetoothAdapter myBluetoothAdapter = null; //This was to test to see what the noBluetoothAdapter() method did
 		if (mBluetoothAdapter == null){
-			connectable.bluetoothUnavailable();
+			connectable.deviceUnavailable();
 		}
+		mEnablingBT = false;
 	}
 
 	private void bluetoothConnected() {
-		connectable.bluetoothConnected();
+		connectable.deviceConnected();
 		bluetoothEnabled = true;
 
 	}
 
 	private void bluetoothDisconnected() {
-		connectable.bluetoothDisconnected();
+		connectable.deviceDisconnected();
 	}
 
 
@@ -113,12 +114,13 @@ public class BluetoothConnector {
 		}
 	}
 
-	public void stopBluetooth() {
-		if (mSerialService != null)
+	public void stopConnection() {
+		if (mSerialService != null) {
 			mSerialService.stop();
+		}
 	}
 
-	public void connectBluetooth() {
+	public void startConnection() {
 		proceedWithConnection = true;
 		if (getConnectionState() == BluetoothSerialService.STATE_NONE) {
 			if (!mEnablingBT) { // If we are turning on the BT we cannot check if it's enable
@@ -164,8 +166,8 @@ public class BluetoothConnector {
 		}
 	}
 
+	// When DeviceListActivity returns with a device to connect
 	public void queryResultConnect(int resultCode, Intent data) {
-		// When DeviceListActivity returns with a device to connect
 		if (resultCode == Activity.RESULT_OK) {
 			// Get the device MAC address
 			String address = data.getExtras()
@@ -177,15 +179,15 @@ public class BluetoothConnector {
 		}
 	}
 
+	// When the request to enable Bluetooth returns
 	public void queryResultEnabled(int resultCode, Intent data) {
-		// When the request to enable Bluetooth returns
 		if (resultCode != Activity.RESULT_OK) {
 			mEnablingBT = false;
 			//finishDialogNoBluetooth();
 		}
 		else {
 			Intent serverIntent = new Intent(activity, DeviceListActivity.class);
-			activity.startActivityForResult(serverIntent, BluetoothConnector.REQUEST_CONNECT_DEVICE);
+			activity.startActivityForResult(serverIntent, DeviceConnection.REQUEST_CONNECT_DEVICE);
 		}
 	}
 
@@ -194,7 +196,7 @@ public class BluetoothConnector {
 		return mSerialService.getState();
 	}
 
-	public boolean enabled() {
+	public boolean isEnabled() {
 		return bluetoothEnabled;
 	}
 
@@ -209,9 +211,5 @@ public class BluetoothConnector {
 		if (mConnectedDeviceName == null)
 			return "";
 		return mConnectedDeviceName;
-	}
-
-	public void onStart() {
-		mEnablingBT = false;
 	}
 }

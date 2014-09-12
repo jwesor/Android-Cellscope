@@ -26,6 +26,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 import edu.berkeley.cellscope.cscore.R;
 
+/**
+ * Activity for testing bluetooth connection.
+ */
 public class BluetoothActivity extends Activity implements OnTouchListener {
 	//MotorButton and its listener
 	private Vibrator vibr;
@@ -145,8 +148,9 @@ public class BluetoothActivity extends Activity implements OnTouchListener {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		if (DEBUG)
+		if (DEBUG) {
 			Log.e(LOG_TAG, "+++ ON CREATE +++");
+		}
 
 
 		//        CONTROL_KEY_NAME = getResources().getStringArray(R.array.entries_controlkey_preference);
@@ -160,8 +164,9 @@ public class BluetoothActivity extends Activity implements OnTouchListener {
 		//        if (DEBUG)
 		Log.e(LOG_TAG, "ONCREATE/setupwindowlayout");
 		//    	getWindow().setFeatureInt(Window.FEATURE_CUSTOM_TITLE, R.layout.custom_title);
-		if (DEBUG)
+		if (DEBUG) {
 			Log.e(LOG_TAG, "ONCREATE/setupthecustomtitle");
+		}
 		//Set up the custom title
 		//        mTitle = (TextView) findViewById(R.id.title_left_text);
 		//        mTitle.setText(R.string.app_name);
@@ -220,8 +225,9 @@ public class BluetoothActivity extends Activity implements OnTouchListener {
 
 
 
-		if (DEBUG)
+		if (DEBUG) {
 			Log.e(LOG_TAG, "+++ DONE IN ON CREATE +++");
+		}
 	}
 
 
@@ -275,8 +281,9 @@ public class BluetoothActivity extends Activity implements OnTouchListener {
 	@Override
 	public void onStart() {
 		super.onStart();
-		if (DEBUG)
+		if (DEBUG) {
 			Log.e(LOG_TAG, "++ ON START ++");
+		}
 
 		mEnablingBT = false;
 	}
@@ -340,8 +347,9 @@ public class BluetoothActivity extends Activity implements OnTouchListener {
 	@Override
 	public synchronized void onPause() {
 		super.onPause();
-		if (DEBUG)
+		if (DEBUG) {
 			Log.e(LOG_TAG, "- ON PAUSE -");
+		}
 
 		/*if (mEmulatorView != null) {
 			mInputManager.hideSoftInputFromWindow(mEmulatorView.getWindowToken(), 0);
@@ -352,19 +360,22 @@ public class BluetoothActivity extends Activity implements OnTouchListener {
 	@Override
 	public void onStop() {
 		super.onStop();
-		if(DEBUG)
+		if(DEBUG) {
 			Log.e(LOG_TAG, "-- ON STOP --");
+		}
 	}
 
 
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
-		if (DEBUG)
+		if (DEBUG) {
 			Log.e(LOG_TAG, "--- ON DESTROY ---");
+		}
 
-		if (mSerialService != null)
+		if (mSerialService != null) {
 			mSerialService.stop();
+		}
 
 	}
 	/*
@@ -420,10 +431,14 @@ public class BluetoothActivity extends Activity implements OnTouchListener {
 		public void handleMessage(Message msg) {
 			switch (msg.what) {
 			case MESSAGE_STATE_CHANGE:
-				if(DEBUG) Log.i(LOG_TAG, "MESSAGE_STATE_CHANGE: " + msg.arg1);
+				if(DEBUG) {
+					Log.i(LOG_TAG, "MESSAGE_STATE_CHANGE: " + msg.arg1);
+				}
 				switch (msg.arg1) {
 				case BluetoothSerialService.STATE_CONNECTED:
-					if(DEBUG) Log.i(LOG_TAG, "MESSAGE_STATE_CHANGE/STATE_CONNECTED");
+					if(DEBUG) {
+						Log.i(LOG_TAG, "MESSAGE_STATE_CHANGE/STATE_CONNECTED");
+					}
 					if (mMenuItemConnect != null) {
 						mMenuItemConnect.setIcon(android.R.drawable.ic_menu_close_clear_cancel);
 						mMenuItemConnect.setTitle(R.string.disconnect);
@@ -437,14 +452,20 @@ public class BluetoothActivity extends Activity implements OnTouchListener {
 					break;
 
 				case BluetoothSerialService.STATE_CONNECTING:
-					if(DEBUG) Log.i(LOG_TAG, "MESSAGE_STATE_CHANGE/STATE_CONNECTING");
+					if(DEBUG) {
+						Log.i(LOG_TAG, "MESSAGE_STATE_CHANGE/STATE_CONNECTING");
+					}
 					mTitle.setText(R.string.title_connecting);
 					break;
 
 				case BluetoothSerialService.STATE_LISTEN:
-					if(DEBUG) Log.i(LOG_TAG, "MESSAGE_STATE_CHANGE/STATE_LISTEN");
+					if(DEBUG) {
+						Log.i(LOG_TAG, "MESSAGE_STATE_CHANGE/STATE_LISTEN");
+					}
 				case BluetoothSerialService.STATE_NONE:
-					if(DEBUG) Log.i(LOG_TAG, "MESSAGE_STATE_CHANGE/STATE_NONE");
+					if(DEBUG) {
+						Log.i(LOG_TAG, "MESSAGE_STATE_CHANGE/STATE_NONE");
+					}
 					if (mMenuItemConnect != null) {
 						mMenuItemConnect.setIcon(android.R.drawable.ic_menu_search);
 						mMenuItemConnect.setTitle(R.string.connect);
@@ -453,13 +474,17 @@ public class BluetoothActivity extends Activity implements OnTouchListener {
 					//I have to replace this line with whatever I am using as an input to the bluetooth device
 					//-----                	mInputManager.hideSoftInputFromWindow(mEmulatorView.getWindowToken(), 0);
 					mTitle.setText(R.string.title_not_connected);
-					if(DEBUG) Log.i(LOG_TAG, "MESSAGE_STATE_CHANGE/STATE_CONNECTED/CACA");
+					if(DEBUG) {
+						Log.i(LOG_TAG, "MESSAGE_STATE_CHANGE/STATE_CONNECTED/CACA");
+					}
 
 					break;
 				}
 				break;
 			case MESSAGE_WRITE:
-				if(DEBUG) Log.i(LOG_TAG, "MESSAGE_WRITE " + msg.arg1);
+				if(DEBUG) {
+					Log.i(LOG_TAG, "MESSAGE_WRITE " + msg.arg1);
+				}
 				if (mLocalEcho) {
 					byte[] writeBuf = (byte[]) msg.obj;
 					//mEmulatorView.write(writeBuf, msg.arg1);
@@ -468,21 +493,27 @@ public class BluetoothActivity extends Activity implements OnTouchListener {
 				break;
 
 			case MESSAGE_READ:
-				if(DEBUG) Log.i(LOG_TAG, "MESSAGE_READ " + msg.arg1);
+				if(DEBUG) {
+					Log.i(LOG_TAG, "MESSAGE_READ " + msg.arg1);
+				}
 				byte[] readBuf = (byte[]) msg.obj;
 				//mEmulatorView.write(readBuf, msg.arg1);
 
 				break;
 
 			case MESSAGE_DEVICE_NAME:
-				if(DEBUG) Log.i(LOG_TAG, "MESSAGE_DEVICE_NAME: " + msg.arg1);
+				if(DEBUG) {
+					Log.i(LOG_TAG, "MESSAGE_DEVICE_NAME: " + msg.arg1);
+				}
 				// save the connected device's name
 				mConnectedDeviceName = msg.getData().getString(DEVICE_NAME);
 				Toast.makeText(getApplicationContext(), "Connected to "
 						+ mConnectedDeviceName, Toast.LENGTH_SHORT).show();
 				break;
 			case MESSAGE_TOAST:
-				if(DEBUG) Log.i(LOG_TAG, "MESSAGE_TOAST: " + msg.arg1);
+				if(DEBUG) {
+					Log.i(LOG_TAG, "MESSAGE_TOAST: " + msg.arg1);
+				}
 				Toast.makeText(getApplicationContext(), msg.getData().getString(TOAST),
 						Toast.LENGTH_SHORT).show();
 				break;
@@ -508,7 +539,9 @@ public class BluetoothActivity extends Activity implements OnTouchListener {
 
 	@Override
 	public void onActivityResult(int requestCode, int resultCode, Intent data) {
-		if(DEBUG) Log.d(LOG_TAG, "onActivityResult " + resultCode);
+		if(DEBUG) {
+			Log.d(LOG_TAG, "onActivityResult " + resultCode);
+		}
 		switch (requestCode) {
 
 		case REQUEST_CONNECT_DEVICE:
@@ -591,9 +624,8 @@ public class BluetoothActivity extends Activity implements OnTouchListener {
 		byte[] buffer = new byte[1];
 
 		if (keyCode < KeyEvent.KEYCODE_DPAD_UP ||
-				keyCode > KeyEvent.KEYCODE_DPAD_CENTER) {
+				keyCode > KeyEvent.KEYCODE_DPAD_CENTER)
 			return false;
-		}
 
 		if (down) {
 			if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER) {
