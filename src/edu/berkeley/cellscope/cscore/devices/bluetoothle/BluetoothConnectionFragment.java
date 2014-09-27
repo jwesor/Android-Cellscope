@@ -55,7 +55,6 @@ public class BluetoothConnectionFragment extends Fragment implements DeviceConne
 
 		public void onServiceDisconnected(ComponentName componentName) {
 			mBtLeService.disconnect();
-			mBtLeService = null;
 		}
 	};
 
