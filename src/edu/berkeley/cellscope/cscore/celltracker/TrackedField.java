@@ -33,7 +33,7 @@ public class TrackedField implements RealtimeImageProcessor {
 	private boolean tracking;
 	private TrackedCallback callback;
 	private final Object lockUpdate, lockDisplay;
-	
+
 	private ScheduledExecutorService updateThread;
 
 	private File file;
@@ -56,7 +56,7 @@ public class TrackedField implements RealtimeImageProcessor {
 		startTime = NULL_TIME;
 		output = new ArrayList<String>();
 	}
-	
+
 	private static void processImage(Mat mat) {
 		Imgproc.cvtColor(mat, mat, Imgproc.COLOR_BGR2GRAY);
 		Core.normalize(mat, mat, 0, 255, Core.NORM_MINMAX, -1);
@@ -73,7 +73,7 @@ public class TrackedField implements RealtimeImageProcessor {
 		Core.normalize(mat, mat, 0, 255, Core.NORM_MINMAX, -1);
 		Imgproc.equalizeHist(mat, mat);
 	}
-	
+
 	public void addObject(Rect region) {
 		synchronized(lockDisplay) {
 			synchronized(lockUpdate) {
@@ -82,12 +82,13 @@ public class TrackedField implements RealtimeImageProcessor {
 				cropRectToMat(region, currentField);
 				TrackedObject object = new TrackedObject(region, currentField);
 				objects.add(object);
-				if (!times.isEmpty())
+				if (!times.isEmpty()) {
 					object.addNullPath(times.size());
+				}
 			}
 		}
 	}
-	
+
 	public void initiateUpdateThread() {
 		updateThread = Executors.newSingleThreadScheduledExecutor();
 		Runnable updater = new Runnable() {
@@ -97,27 +98,29 @@ public class TrackedField implements RealtimeImageProcessor {
 		};
 		updateThread.scheduleWithFixedDelay(updater, INITIAL_DELAY, interval, TimeUnit.MILLISECONDS);
 	}
-	
+
 	public void setInterval(int i) {
 		interval = i;
 	}
-	
+
 	public void haltUpdateThread() {
-		if (updateThread != null)
+		if (updateThread != null) {
 			updateThread.shutdown();
+		}
 		updateThread = null;
 	}
-	
+
 	public List<Rect> getBoundingBoxes() {
 		synchronized(lockUpdate) {
 			List<Rect> list = new ArrayList<Rect>();
 			for (TrackedObject o: objects)
-				if (!o.isDisabled())
+				if (!o.isDisabled()) {
 					list.add(o.boundingBox);
+				}
 			return list;
 		}
 	}
-	
+
 	public void processFrame(Mat frame) {
 		synchronized(lockDisplay) {
 			synchronized(lockUpdate) {
@@ -126,7 +129,7 @@ public class TrackedField implements RealtimeImageProcessor {
 			}
 		}
 	}
-	
+
 	private void update(Mat newField) {
 		synchronized(lockUpdate) {
 			//newField.copyTo(display);
@@ -140,7 +143,7 @@ public class TrackedField implements RealtimeImageProcessor {
 					long oldTime = time;
 					time = System.currentTimeMillis();
 					total += (time - oldTime);
-				//	System.out.println("\tUpdated one object in " + (time - oldTime) + "; match " + o.tMatch);
+					//	System.out.println("\tUpdated one object in " + (time - oldTime) + "; match " + o.tMatch);
 				}
 			}
 			resolveIssues();
@@ -153,44 +156,51 @@ public class TrackedField implements RealtimeImageProcessor {
 			//System.out.println("Update complete in " + total + " with " + objects.size() + " object(s)");
 			if (tracking) {
 				long newtime = nextTime - startTime;
-				if (callback != null)
+				if (callback != null) {
 					callback.trackingUpdateComplete(newField);
-				
+				}
+
 				if (file != null) {
 					String write = newtime + ",";
 					for (TrackedObject o: objects) {
-						if (o.lastPathPoint() != null)
+						if (o.lastPathPoint() != null) {
 							write += (o.lastPathPoint().x + "," + o.lastPathPoint().y + ",");
-						else
+						} else {
 							write += ("?,?,");
+						}
 					}
 					output.add(write);
 				}
-				
+
 			}
 		}
 	}
-	
+
 	//Check to see if multiple TrackedObjects are tracking the same object, and remove them
 	private void resolveIssues() {
 		int size = objects.size();
 		for (int i = 0; i < size; i ++) {
 			TrackedObject first = objects.get(i);
-			if (first.isDisabled())
+			if (first.isDisabled()) {
 				continue;
+			}
 			if (!first.newPosInFov(center, radius)) {
 				first.invalidateUpdate();
 			}
-			if (!first.followed())
+			if (!first.followed()) {
 				continue;
+			}
 			for (int j = i + 1; j < size; j ++) {
 				TrackedObject second = objects.get(j);
-				if (second.isDisabled())
+				if (second.isDisabled()) {
 					continue;
-				if (!second.followed() || !first.followed())
+				}
+				if (!second.followed() || !first.followed()) {
 					continue;
-				if (!first.overlapViolation(second))
+				}
+				if (!first.overlapViolation(second)) {
 					continue;
+				}
 				boolean violation = first.trackingViolation(second);
 				if (!violation) {
 					System.out.println("invalidating update: overlap failure");
@@ -203,15 +213,16 @@ public class TrackedField implements RealtimeImageProcessor {
 			}
 		}
 	}
-	
+
 	//Mark all objects as updated
 	private void confirmUpdate() {
 		for (TrackedObject o: objects) {
-			if (o.followed() && !o.isDisabled())
+			if (o.followed() && !o.isDisabled()) {
 				o.confirmUpdate();
+			}
 		}
 	}
-	
+
 	//Return an image with object locations and paths overlaid.
 	public void displayFrame(Mat mat) {
 		synchronized(lockDisplay) {
@@ -220,42 +231,46 @@ public class TrackedField implements RealtimeImageProcessor {
 				//if (o.roi != null) {
 				//	Core.rectangle(display, o.roi.tl(), o.roi.br(), GREEN);
 				//}
-				if (!o.isDisabled())
+				if (!o.isDisabled()) {
 					o.drawInfo(mat);
+				}
 			}
 		}
 	}
-	
+
 	public void startTracking() {
 		synchronized(lockUpdate) {
 			if (tracking)
 				return;
 			tracking = true;
-			if (startTime == NULL_TIME)
+			if (startTime == NULL_TIME) {
 				startTime = System.currentTimeMillis();
+			}
 			for (TrackedObject o: objects)
-				if (!o.isDisabled())
+				if (!o.isDisabled()) {
 					o.setTracking(true);
+				}
 		}
 	}
-	
+
 	public void stopTracking() {
 		synchronized(lockUpdate) {
 			if (!tracking)
 				return;
 			tracking = false;
-			for (TrackedObject o: objects)
+			for (TrackedObject o: objects) {
 				o.setTracking(false);
+			}
 			if (file != null) {
 				dumpOutputToFile();
 			}
 		}
 	}
-	
+
 	public boolean isRunning() {
 		return updateThread != null;
 	}
-	
+
 	public void dumpOutputToFile() {
 		try {
 			BufferedWriter writer = new BufferedWriter(new FileWriter(file));
@@ -264,8 +279,9 @@ public class TrackedField implements RealtimeImageProcessor {
 			writer.newLine();
 			String tableColumns = "time,";
 			int size = objects.size();
-			for (int i = 0; i < size; i ++)
+			for (int i = 0; i < size; i ++) {
 				tableColumns += "x" + i + ",y" + i + ",";
+			}
 			writer.write(tableColumns);
 			writer.newLine();
 			for (String s: output) {
@@ -290,15 +306,15 @@ public class TrackedField implements RealtimeImageProcessor {
 			e.printStackTrace();
 		}
 	}
-	
+
 	public void stop() {
 		resetData();
 	}
-	
+
 	public void start() {
 		initiateUpdateThread();
 	}
-	
+
 	public void resetData() {
 		synchronized(lockDisplay) {
 			synchronized(lockUpdate) {
@@ -310,18 +326,18 @@ public class TrackedField implements RealtimeImageProcessor {
 			}
 		}
 	}
-	
+
 	public void setCallback(TrackedCallback c) {
 		synchronized(lockUpdate) {
 			callback = c;
 		}
 	}
-	
+
 	public void setOutputFile(File f, String title) {
 		file = f;
 		header = title;
 	}
-	
+
 	public Rect selectObject(Point point) {
 		synchronized(lockDisplay) {
 			synchronized(lockUpdate) {
@@ -337,11 +353,11 @@ public class TrackedField implements RealtimeImageProcessor {
 			}
 		}
 	}
-	
+
 	public void continueRunning() {
 		//do nothing
 	}
-	
+
 	//Reduce the size of a rectangle to fit the matrix.
 	//Useful for Mat.submat(), when the rectangle has potential to go out of bounds.
 	public static void cropRectToMat(Rect rect, Mat mat) {

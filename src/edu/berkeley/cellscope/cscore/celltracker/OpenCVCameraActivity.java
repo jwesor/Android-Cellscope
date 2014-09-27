@@ -31,17 +31,18 @@ import android.widget.Toast;
 import edu.berkeley.cellscope.cscore.CameraActivity;
 import edu.berkeley.cellscope.cscore.R;
 import edu.berkeley.cellscope.cscore.ScreenDimension;
-import edu.berkeley.cellscope.cscore.cameraui.BluetoothDeviceConnection;
 import edu.berkeley.cellscope.cscore.cameraui.CompoundTouchListener;
-import edu.berkeley.cellscope.cscore.cameraui.DeviceConnectable;
-import edu.berkeley.cellscope.cscore.cameraui.DeviceConnection;
 import edu.berkeley.cellscope.cscore.cameraui.PinchSelectActivity;
 import edu.berkeley.cellscope.cscore.cameraui.TouchControl;
 import edu.berkeley.cellscope.cscore.cameraui.TouchExposureControl;
 import edu.berkeley.cellscope.cscore.cameraui.TouchPanControl;
 import edu.berkeley.cellscope.cscore.cameraui.TouchZoomControl;
+import edu.berkeley.cellscope.cscore.devices.DeviceConnection;
+import edu.berkeley.cellscope.cscore.devices.bluetooth.BluetoothDeviceConnectable;
+import edu.berkeley.cellscope.cscore.devices.bluetooth.BluetoothDeviceConnection;
 
-public class OpenCVCameraActivity extends Activity implements CvCameraViewListener2, DeviceConnectable, TouchZoomControl.Zoomable, TouchExposureControl.ManualExposure {
+
+public class OpenCVCameraActivity extends Activity implements CvCameraViewListener2, BluetoothDeviceConnectable, TouchZoomControl.Zoomable, TouchExposureControl.ManualExposure {
 
 	DeviceConnection btConnector;
 	private static final String TAG = "OpenCV_Camera";
@@ -171,7 +172,7 @@ public class OpenCVCameraActivity extends Activity implements CvCameraViewListen
 		if (cameraView != null) {
 			cameraView.disableView();
 		}
-		btConnector.disconnectFromDevice();
+		btConnector.close();
 	}
 
 	public void deviceUnavailable() {
@@ -325,7 +326,7 @@ public class OpenCVCameraActivity extends Activity implements CvCameraViewListen
 	}
 
 
-	public void readMessage(Message msg) {
+	public void pushData(Message msg) {
 	}
 
 	public void writeByte(byte b) {
@@ -349,7 +350,7 @@ public class OpenCVCameraActivity extends Activity implements CvCameraViewListen
 		int id = item.getItemId();
 		if (id == R.id.connect) {
 			maintainCamera = true;
-			btConnector.connectToDevice();
+			btConnector.open();
 			return true;
 		} else if (id == R.id.menu_pinch) {
 			maintainCamera = true;
@@ -417,6 +418,6 @@ public class OpenCVCameraActivity extends Activity implements CvCameraViewListen
 	}
 
 	public boolean isReadyForWrite() {
-		return btConnector.isConnectedToDevice();
+		return btConnector.isOpen();
 	}
 }

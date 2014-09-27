@@ -1,4 +1,4 @@
-package edu.berkeley.cellscope.cscore.bluetooth;
+package edu.berkeley.cellscope.cscore.devices.bluetooth;
 
 import android.app.Activity;
 import android.app.AlertDialog;

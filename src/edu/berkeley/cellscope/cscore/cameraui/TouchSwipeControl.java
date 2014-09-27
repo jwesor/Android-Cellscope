@@ -1,19 +1,20 @@
 package edu.berkeley.cellscope.cscore.cameraui;
 
 import android.view.MotionEvent;
+import edu.berkeley.cellscope.cscore.devices.bluetooth.BluetoothDeviceConnectable;
 
 /*
  * Touch listener that responds to single-finger gestures.
  */
 
 public class TouchSwipeControl extends TouchControl {
-	protected DeviceConnectable stage;
+	protected BluetoothDeviceConnectable stage;
 	private double touchX, touchY;
 	private int lastX, lastY;
 
 	private static final double SENSITIVITY = 0.1;
 
-	public TouchSwipeControl(DeviceConnectable s, int w, int h) {
+	public TouchSwipeControl(BluetoothDeviceConnectable s, int w, int h) {
 		super(w, h);
 		stage = s;
 		touchX = touchY = firstTouchEvent;

@@ -1,15 +1,17 @@
 package edu.berkeley.cellscope.cscore.cameraui;
 
-import edu.berkeley.cellscope.cscore.bluetooth.BluetoothActivity;
+import edu.berkeley.cellscope.cscore.devices.DeviceConnection;
+import edu.berkeley.cellscope.cscore.devices.bluetooth.BluetoothActivity;
+import edu.berkeley.cellscope.cscore.devices.bluetooth.BluetoothDeviceConnectable;
 
 public class IlluminationControl {
-	private DeviceConnectable scope;
+	private BluetoothDeviceConnectable scope;
 	private boolean on;
 
 	private static int lightOn = BluetoothActivity.lightOn;
 	private static int lightOff = BluetoothActivity.lightOff;
 
-	public IlluminationControl(DeviceConnectable bt) {
+	public IlluminationControl(BluetoothDeviceConnectable bt) {
 		scope = bt;
 		on = false;
 	}

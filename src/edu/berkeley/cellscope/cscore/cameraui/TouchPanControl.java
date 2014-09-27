@@ -1,6 +1,7 @@
 package edu.berkeley.cellscope.cscore.cameraui;
 
 import android.view.MotionEvent;
+import edu.berkeley.cellscope.cscore.devices.bluetooth.BluetoothDeviceConnectable;
 
 /*
  * Touch listener that responds to single-finger gestures.
@@ -10,7 +11,7 @@ import android.view.MotionEvent;
  */
 
 public class TouchPanControl extends TouchControl {
-	private DeviceConnectable stage;
+	private BluetoothDeviceConnectable stage;
 	private double touchX, touchY;
 	private double zZone;
 	private int panState;
@@ -19,7 +20,7 @@ public class TouchPanControl extends TouchControl {
 	private static final double PAN_THRESHOLD = 50; //Gestures smaller than this are ignored.
 	private static final double Z_CONTROL_ZONE = 0.3; //Gestures left of this part of the screen are used to control Z
 
-	public TouchPanControl(DeviceConnectable p, int w, int h) {
+	public TouchPanControl(BluetoothDeviceConnectable p, int w, int h) {
 		super(w, h);
 		stage = p;
 		zZone = screenWidth * Z_CONTROL_ZONE;

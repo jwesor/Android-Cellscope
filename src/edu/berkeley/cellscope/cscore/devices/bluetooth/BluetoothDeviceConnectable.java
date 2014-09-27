@@ -1,15 +1,14 @@
-package edu.berkeley.cellscope.cscore.cameraui;
+package edu.berkeley.cellscope.cscore.devices.bluetooth;
 
 import android.os.Message;
+import edu.berkeley.cellscope.cscore.devices.DeviceConnectable;
 
-public interface DeviceConnectable {
+public interface BluetoothDeviceConnectable extends DeviceConnectable<Message> {
 
 	public void deviceUnavailable();
 	public void deviceConnected();
 	public void deviceDisconnected();
 	public void updateStatusMessage(int id);
-	public void readMessage(Message msg);
 	public void writeByte(byte b);
 	public boolean isReadyForWrite();
-	public DeviceConnection getDeviceConnection();
 }

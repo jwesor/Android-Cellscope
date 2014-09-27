@@ -67,17 +67,17 @@
             android:screenOrientation="landscape" >
         </activity>
         <activity
-            android:name=".bluetooth.BluetoothActivity"
+            android:name="edu.berkeley.cellscope.cscore.devices.bluetooth.BluetoothActivity"
             android:label="@string/title_activity_bluetooth"
             android:screenOrientation="fullSensor" >
         </activity>
         <activity
-            android:name=".bluetooth.DeviceListActivity"
+            android:name="edu.berkeley.cellscope.cscore.devices.bluetooth.DeviceListActivity"
             android:configChanges="orientation|keyboardHidden"
             android:label="@string/select_device"
             android:theme="@android:style/Theme.Dialog" />
         <activity
-            android:name=".bluetoothle.DeviceScanActivity"
+            android:name="edu.berkeley.cellscope.cscore.devices.bluetoothle.DeviceScanActivity"
             android:configChanges="orientation|keyboardHidden"
             android:label="@string/select_device"
             android:theme="@android:style/Theme.Dialog" />
@@ -155,7 +155,7 @@
         </service>
 
         <activity
-            android:name="edu.berkeley.cellscope.cscore.bluetoothle.BluetoothLeTestActivity"
+            android:name="edu.berkeley.cellscope.cscore.devices.bluetoothle.BluetoothLeTestActivity"
             android:label="@string/title_activity_bluetooth_le_test" >
         </activity>
     </application>

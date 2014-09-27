@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package edu.berkeley.cellscope.cscore.bluetoothle;
+package edu.berkeley.cellscope.cscore.devices.bluetoothle;
 
 import java.util.ArrayList;
 import java.util.concurrent.Executors;

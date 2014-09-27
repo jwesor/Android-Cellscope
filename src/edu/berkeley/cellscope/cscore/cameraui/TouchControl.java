@@ -4,7 +4,7 @@ import android.app.Activity;
 import android.view.MotionEvent;
 import android.view.View;
 import edu.berkeley.cellscope.cscore.ScreenDimension;
-import edu.berkeley.cellscope.cscore.bluetooth.BluetoothActivity;
+import edu.berkeley.cellscope.cscore.devices.bluetooth.BluetoothActivity;
 
 /*
  * Parent class.

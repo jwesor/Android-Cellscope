@@ -6,7 +6,7 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context="edu.berkeley.cellscope.cscore.bluetoothle.BluetoothLeTestActivity" >
+    tools:context="edu.berkeley.cellscope.cscore.devices.bluetoothle.BluetoothLeTestActivity" >
 
     <Button
         android:id="@+id/bluetooth_test_button"

@@ -1,16 +1,18 @@
-package edu.berkeley.cellscope.cscore.bluetoothle;
+package edu.berkeley.cellscope.cscore.devices.bluetoothle;
 
 import android.app.Activity;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
 import android.os.Bundle;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import edu.berkeley.cellscope.cscore.R;
+import edu.berkeley.cellscope.cscore.devices.DeviceConnectable;
 
 public class BluetoothLeTestActivity extends Activity {
+
+	private static final String BLUETOOTH_FRAGMENT = "BluetoothConnectionFragment";
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -23,29 +25,33 @@ public class BluetoothLeTestActivity extends Activity {
 
 			public void onClick(View v) {
 				System.out.println("Attempting to create fragment....");
-				String bluetoothFragment = "BluetoothConnectionFragment";
 				FragmentManager fragmentManager = getFragmentManager();
 				FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
 				BluetoothConnectionFragment fragment = new BluetoothConnectionFragment();
-				fragmentTransaction.add(fragment, bluetoothFragment);
+				fragmentTransaction.add(fragment, BLUETOOTH_FRAGMENT);
 				fragmentTransaction.commit();
 				fragmentManager.executePendingTransactions();
 				System.out.println("Fragment created and committed....");
-				((BluetoothConnectionFragment) fragmentManager.findFragmentByTag(bluetoothFragment)).connectToDevice();
+				((BluetoothConnectionFragment) fragmentManager.findFragmentByTag(BLUETOOTH_FRAGMENT)).open();
 				System.out.println("Attempting to connect to device...");
+				((BluetoothConnectionFragment) fragmentManager.findFragmentByTag(BLUETOOTH_FRAGMENT)).addReceiver(receiver);
 			}
 
 		});
 	}
 
-	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
-		// Handle action bar item clicks here. The action bar will
-		// automatically handle clicks on the Home/Up button, so long
-		// as you specify a parent activity in AndroidManifest.xml.
-		int id = item.getItemId();
-		if (id == R.id.action_settings)
-			return true;
-		return super.onOptionsItemSelected(item);
-	}
+	private DeviceConnectable<byte[]> receiver = new DeviceConnectable<byte[]>() {
+
+		public BluetoothConnectionFragment getDeviceConnection() {
+			return ((BluetoothConnectionFragment) getFragmentManager().findFragmentByTag(BLUETOOTH_FRAGMENT));
+		}
+
+		public void pushData(byte[] dat) {
+			if (dat != null) {
+				String data = new String(dat);
+				System.out.println(data);
+			}
+		}
+
+	};
 }

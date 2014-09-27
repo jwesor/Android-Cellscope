@@ -4,9 +4,9 @@ import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Size;
 
-import edu.berkeley.cellscope.cscore.cameraui.DeviceConnectable;
 import edu.berkeley.cellscope.cscore.cameraui.TouchControl;
 import edu.berkeley.cellscope.cscore.cameraui.TouchSwipeControl;
+import edu.berkeley.cellscope.cscore.devices.bluetooth.BluetoothDeviceConnectable;
 
 /*
  * Determines the number of motor steps that backlash will consume.
@@ -50,7 +50,7 @@ public class BacklashCalibrator implements RealtimeImageProcessor {
 	public static final String SUCCESS_MESSAGE = "Calibration successful";
 	public static final String FAILURE_MESSAGE = "Calibration failed";
 
-	public BacklashCalibrator(DeviceConnectable bt, int w, int h) {
+	public BacklashCalibrator(BluetoothDeviceConnectable bt, int w, int h) {
 		TouchSwipeControl ctrl = new TouchSwipeControl(bt, w, h);
 		init(ctrl, w, h);
 	}

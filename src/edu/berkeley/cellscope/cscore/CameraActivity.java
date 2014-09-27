@@ -35,10 +35,10 @@ import android.view.View;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
-import edu.berkeley.cellscope.cscore.bluetooth.BluetoothSerialService;
-import edu.berkeley.cellscope.cscore.bluetooth.DeviceListActivity;
 import edu.berkeley.cellscope.cscore.cameraui.CompoundTouchListener;
 import edu.berkeley.cellscope.cscore.cameraui.TouchZoomControl;
+import edu.berkeley.cellscope.cscore.devices.bluetooth.BluetoothSerialService;
+import edu.berkeley.cellscope.cscore.devices.bluetooth.DeviceListActivity;
 
 /**
  * This activity runs the camera, allowing either photos or video to be taken.

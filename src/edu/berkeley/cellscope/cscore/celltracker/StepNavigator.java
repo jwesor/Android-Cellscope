@@ -6,8 +6,8 @@ import java.util.List;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
 
-import edu.berkeley.cellscope.cscore.cameraui.DeviceConnectable;
 import edu.berkeley.cellscope.cscore.cameraui.TouchSwipeControl;
+import edu.berkeley.cellscope.cscore.devices.bluetooth.BluetoothDeviceConnectable;
 
 /**
  *  Moves the stage.
@@ -25,7 +25,7 @@ public class StepNavigator implements RealtimeImageProcessor, FovTracker.MotionC
 
 	private static final int STRIDE_SIZE = StepCalibrator.STRIDE_SIZE;
 
-	public StepNavigator(DeviceConnectable bt, int w, int h) {
+	public StepNavigator(BluetoothDeviceConnectable bt, int w, int h) {
 		TouchSwipeControl ctrl = new TouchSwipeControl(bt, w, h);
 		StepCalibrator calib = new StepCalibrator(ctrl, w, h);
 		Autofocus focus = new Autofocus(ctrl);

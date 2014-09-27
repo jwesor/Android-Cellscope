@@ -1,4 +1,4 @@
-package edu.berkeley.cellscope.cscore.cameraui;
+package edu.berkeley.cellscope.cscore.devices.bluetooth;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -10,8 +10,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.widget.Toast;
 import edu.berkeley.cellscope.cscore.R;
-import edu.berkeley.cellscope.cscore.bluetooth.BluetoothSerialService;
-import edu.berkeley.cellscope.cscore.bluetooth.DeviceListActivity;
+import edu.berkeley.cellscope.cscore.devices.DeviceConnection;
 
 /**
  *  Handles user interface for enabling bluetooth and connecting to devices,
@@ -20,7 +19,7 @@ import edu.berkeley.cellscope.cscore.bluetooth.DeviceListActivity;
  */
 public class BluetoothDeviceConnection implements DeviceConnection {
 	private Activity activity;
-	private DeviceConnectable connectable;
+	private BluetoothDeviceConnectable connectable;
 
 	//Bluetooth stuff
 	private static BluetoothSerialService mSerialService = null;
@@ -34,7 +33,7 @@ public class BluetoothDeviceConnection implements DeviceConnection {
 	private boolean bluetoothEnabled = false;
 	private boolean proceedWithConnection = true;
 
-
+	private Message message;
 
 	// Message types sent from the BluetoothReadService Handler
 	public static final int MESSAGE_STATE_CHANGE = 1;
@@ -51,9 +50,9 @@ public class BluetoothDeviceConnection implements DeviceConnection {
 	static final int REQUEST_CONNECT_DEVICE = 1;
 	static final int REQUEST_ENABLE_BT = 2;
 
-	public BluetoothDeviceConnection(Activity c, DeviceConnectable b) {
+	public BluetoothDeviceConnection(Activity c, BluetoothDeviceConnectable b) {
 		activity = c;
-		connectable = b;
+		addReceiver(b);
 		mHandlerBT = new BluetoothHandler();
 		mSerialService = new BluetoothSerialService(activity, mHandlerBT/*, mEmulatorView*/);
 
@@ -63,6 +62,10 @@ public class BluetoothDeviceConnection implements DeviceConnection {
 			connectable.deviceUnavailable();
 		}
 		mEnablingBT = false;
+	}
+
+	public void addReceiver(BluetoothDeviceConnectable receiver) {
+		connectable = receiver;
 	}
 
 	private void bluetoothConnected() {
@@ -102,7 +105,8 @@ public class BluetoothDeviceConnection implements DeviceConnection {
 				break;
 
 			case MESSAGE_READ:
-				connectable.readMessage(msg);
+				message = msg;
+				connectable.pushData(message);
 				break;
 
 			case MESSAGE_DEVICE_NAME:
@@ -119,13 +123,13 @@ public class BluetoothDeviceConnection implements DeviceConnection {
 		}
 	}
 
-	public void disconnectFromDevice() {
+	public void close() {
 		if (mSerialService != null) {
 			mSerialService.stop();
 		}
 	}
 
-	public void connectToDevice() {
+	public void open() {
 		proceedWithConnection = true;
 		if (getConnectionState() == BluetoothSerialService.STATE_NONE) {
 			if (!mEnablingBT) { // If we are turning on the BT we cannot check if it's enable
@@ -201,7 +205,7 @@ public class BluetoothDeviceConnection implements DeviceConnection {
 		return mSerialService.getState();
 	}
 
-	public boolean isConnectedToDevice() {
+	public boolean isOpen() {
 		return bluetoothEnabled;
 	}
 
@@ -210,6 +214,10 @@ public class BluetoothDeviceConnection implements DeviceConnection {
 			System.out.println("write  " + buffer[0]);
 			mSerialService.write(buffer);
 		}
+	}
+
+	public Message read() {
+		return message;
 	}
 
 	public String getDeviceName() {

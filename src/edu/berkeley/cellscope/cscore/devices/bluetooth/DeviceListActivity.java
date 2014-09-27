@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package edu.berkeley.cellscope.cscore.bluetooth;
+package edu.berkeley.cellscope.cscore.devices.bluetooth;
 
 import java.util.Set;
 

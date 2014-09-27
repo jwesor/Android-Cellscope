@@ -39,8 +39,8 @@ public class StageCameraActivity extends OpenCVCameraActivity implements Autofoc
 	}
 
 	@Override
-	public void readMessage(Message msg) {
-		super.readMessage(msg);
+	public void pushData(Message msg) {
+		super.pushData(msg);
 		byte[] buffer = (byte[])(msg.obj);
 		if (buffer.length > 0) {
 			if (autofocus.isRunning()) {

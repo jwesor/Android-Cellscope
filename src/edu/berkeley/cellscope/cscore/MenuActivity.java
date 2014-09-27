@@ -4,14 +4,14 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
-import edu.berkeley.cellscope.cscore.bluetooth.BluetoothActivity;
-import edu.berkeley.cellscope.cscore.bluetoothle.BluetoothLeTestActivity;
 import edu.berkeley.cellscope.cscore.celltracker.OpenCVCameraActivity;
 import edu.berkeley.cellscope.cscore.celltracker.PanTrackActivity;
 import edu.berkeley.cellscope.cscore.celltracker.StageCameraActivity;
 import edu.berkeley.cellscope.cscore.celltracker.SwipePanActivity;
 import edu.berkeley.cellscope.cscore.celltracker.TrackedCameraActivity;
 import edu.berkeley.cellscope.cscore.celltracker.tracker.TrackerSettingsActivity;
+import edu.berkeley.cellscope.cscore.devices.bluetooth.BluetoothActivity;
+import edu.berkeley.cellscope.cscore.devices.bluetoothle.BluetoothLeTestActivity;
 import edu.berkeley.cellscope.cscore.mediaviewer.PhotoLibraryActivity;
 import edu.berkeley.cellscope.cscore.mediaviewer.VideoLibraryActivity;
 

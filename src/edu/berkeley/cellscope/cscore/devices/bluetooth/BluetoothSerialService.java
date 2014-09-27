@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.berkeley.cellscope.cscore.bluetooth;
+package edu.berkeley.cellscope.cscore.devices.bluetooth;
 
 import java.io.IOException;
 import java.io.InputStream;

@@ -8,8 +8,8 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import edu.berkeley.cellscope.cscore.R;
-import edu.berkeley.cellscope.cscore.cameraui.DeviceConnectable;
 import edu.berkeley.cellscope.cscore.cameraui.TouchSwipeControl;
+import edu.berkeley.cellscope.cscore.devices.bluetooth.BluetoothDeviceConnectable;
 
 /*
  * Class for testing the stepper counter.
@@ -48,8 +48,8 @@ public class SwipePanActivity extends OpenCVCameraActivity implements Autofocus.
 	}
 
 	@Override
-	public void readMessage(Message msg) {
-		super.readMessage(msg);
+	public void pushData(Message msg) {
+		super.pushData(msg);
 		byte[] buffer = (byte[])(msg.obj);
 		if (buffer.length > 0) {
 			//			int message = (int)(buffer[0]);
@@ -170,7 +170,7 @@ public class SwipePanActivity extends OpenCVCameraActivity implements Autofocus.
 	 */
 	private class NavigationSwipeControl extends TouchSwipeControl {
 
-		public NavigationSwipeControl(DeviceConnectable s, int w, int h) {
+		public NavigationSwipeControl(BluetoothDeviceConnectable s, int w, int h) {
 			super(s, w, h);
 		}
 
