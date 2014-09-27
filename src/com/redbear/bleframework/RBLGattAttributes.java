@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.redbear.simplecontrols;
+package com.redbear.bleframework;
 
 import java.util.HashMap;
 

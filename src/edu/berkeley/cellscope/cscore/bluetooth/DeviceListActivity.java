@@ -138,11 +138,13 @@ public class DeviceListActivity extends Activity {
 	 * Start device discover with the BluetoothAdapter
 	 */
 	private void doDiscovery() {
-		if (D) Log.d(TAG, "doDiscovery()");
+		if (D) {
+			Log.d(TAG, "doDiscovery()");
+		}
 
 		// Indicate scanning in the title
 		setProgressBarIndeterminateVisibility(true);
-		setTitle(R.string.scanning);
+		setTitle(R.string.device_dialog_scanning);
 
 		// Turn on sub-title for new devices
 		findViewById(R.id.title_new_devices).setVisibility(View.VISIBLE);

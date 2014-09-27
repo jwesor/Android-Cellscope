@@ -76,5 +76,12 @@
         android:text="Cell Tracker"
         android:onClick="goToCellTracker"/>
     
+    <Button
+        android:id="@+id/button_bluetooth_test"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Bluetooth LE Test"
+        android:onClick="goToBluetoothTest"/>
+    
 
 </LinearLayout>

@@ -5,8 +5,12 @@
     android:versionName="1.0" >
 
     <uses-feature android:name="android.hardware.camera" />
-    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
-    <uses-feature android:name="android.hardware.bluetooth_le" android:required="true"/>
+    <uses-feature
+        android:name="android.hardware.camera.autofocus"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.bluetooth_le"
+        android:required="true" />
 
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.CAMERA" />
@@ -19,55 +23,61 @@
         android:targetSdkVersion="20" />
 
     <application
+        android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
-        android:theme="@style/AppTheme"
-        android:allowBackup="true" >
+        android:theme="@style/AppTheme" >
         <activity
-            android:name="edu.berkeley.cellscope.cscore.MenuActivity"
+            android:name=".MenuActivity"
             android:label="@string/title_activity_cellscope_launcher"
             android:screenOrientation="portrait" >
         </activity>
         <activity
-            android:name="edu.berkeley.cellscope.cscore.CameraActivity"
+            android:name=".CameraActivity"
             android:label="camera_activity"
             android:screenOrientation="landscape"
             android:theme="@android:style/Theme.NoTitleBar.Fullscreen" >
         </activity>
         <activity
-            android:name="edu.berkeley.cellscope.cscore.LoginActivity"
+            android:name=".LoginActivity"
             android:label="@string/title_activity_login" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
         <activity
-            android:name="edu.berkeley.cellscope.cscore.mediaviewer.PhotoLibraryActivity"
+            android:name=".mediaviewer.PhotoLibraryActivity"
             android:label="@string/title_activity_photo_gallery"
             android:screenOrientation="portrait" >
         </activity>
         <activity
-            android:name="edu.berkeley.cellscope.cscore.mediaviewer.VideoLibraryActivity"
+            android:name=".mediaviewer.VideoLibraryActivity"
             android:label="@string/title_activity_video_gallery"
             android:screenOrientation="portrait" >
         </activity>
         <activity
-            android:name="edu.berkeley.cellscope.cscore.mediaviewer.PhotoActivity"
+            android:name=".mediaviewer.PhotoActivity"
             android:label="@string/title_activity_photo" >
         </activity>
         <activity
-            android:name="edu.berkeley.cellscope.cscore.mediaviewer.VideoActivity"
+            android:name=".mediaviewer.VideoActivity"
             android:label="@string/title_activity_video"
             android:screenOrientation="landscape" >
         </activity>
         <activity
-            android:name="edu.berkeley.cellscope.cscore.bluetooth.BluetoothActivity"
+            android:name=".bluetooth.BluetoothActivity"
             android:label="@string/title_activity_bluetooth"
             android:screenOrientation="fullSensor" >
         </activity>
         <activity
-            android:name="edu.berkeley.cellscope.cscore.bluetooth.DeviceListActivity"
+            android:name=".bluetooth.DeviceListActivity"
+            android:configChanges="orientation|keyboardHidden"
+            android:label="@string/select_device"
+            android:theme="@android:style/Theme.Dialog" />
+        <activity
+            android:name=".bluetoothle.DeviceScanActivity"
             android:configChanges="orientation|keyboardHidden"
             android:label="@string/select_device"
             android:theme="@android:style/Theme.Dialog" />
@@ -75,68 +85,78 @@
         <!--  -->
         <!-- Using a dialog will cause the camera to not restart the preview -->
         <activity
-            android:name="edu.berkeley.cellscope.cscore.celltracker.OpenCVCameraActivity"
+            android:name=".celltracker.OpenCVCameraActivity"
             android:label="@string/title_activity_open_cvcamera"
             android:screenOrientation="landscape"
             android:theme="@android:style/Theme.NoTitleBar.Fullscreen" >
         </activity>
         <activity
-            android:name="edu.berkeley.cellscope.cscore.celltracker.PanTrackActivity"
+            android:name=".celltracker.PanTrackActivity"
             android:label="@string/title_activity_pan_track"
             android:screenOrientation="landscape"
             android:theme="@android:style/Theme.NoTitleBar.Fullscreen" >
         </activity>
         <activity
-            android:name="edu.berkeley.cellscope.cscore.cameraui.PinchSelectActivity"
+            android:name=".cameraui.PinchSelectActivity"
             android:configChanges="orientation|keyboardHidden"
             android:label="@string/pinch_control"
             android:theme="@android:style/Theme.Dialog" >
         </activity>
         <activity
-            android:name="edu.berkeley.cellscope.cscore.celltracker.TrackedCameraActivity"
+            android:name=".celltracker.TrackedCameraActivity"
             android:label="TrackCam"
             android:screenOrientation="landscape"
             android:theme="@android:style/Theme.NoTitleBar.Fullscreen" >
         </activity>
         <activity
-            android:name="edu.berkeley.cellscope.cscore.celltracker.tracker.InitialCameraActivity"
+            android:name=".celltracker.tracker.InitialCameraActivity"
             android:label="@string/title_activity_initial_camera"
             android:screenOrientation="landscape"
             android:theme="@android:style/Theme.NoTitleBar.Fullscreen" >
         </activity>
         <activity
-            android:name="edu.berkeley.cellscope.cscore.celltracker.tracker.CellDetectActivity"
+            android:name=".celltracker.tracker.CellDetectActivity"
             android:label="@string/title_activity_cell_detect"
             android:screenOrientation="landscape"
             android:theme="@android:style/Theme.NoTitleBar.Fullscreen" >
         </activity>
         <activity
-            android:name="edu.berkeley.cellscope.cscore.celltracker.tracker.ViewFieldActivity"
+            android:name=".celltracker.tracker.ViewFieldActivity"
             android:label="@string/title_activity_viewfield"
             android:screenOrientation="landscape"
             android:theme="@android:style/Theme.NoTitleBar.Fullscreen" >
         </activity>
         <activity
-            android:name="edu.berkeley.cellscope.cscore.celltracker.tracker.CellTrackerActivity"
+            android:name=".celltracker.tracker.CellTrackerActivity"
             android:label="@string/title_activity_viewfield"
             android:screenOrientation="landscape"
             android:theme="@android:style/Theme.NoTitleBar.Fullscreen" >
         </activity>
         <activity
-            android:name="edu.berkeley.cellscope.cscore.celltracker.tracker.TrackerSettingsActivity"
+            android:name=".celltracker.tracker.TrackerSettingsActivity"
             android:label="@string/title_activity_tracker_settings" >
         </activity>
         <activity
-            android:name="edu.berkeley.cellscope.cscore.celltracker.SwipePanActivity"
+            android:name=".celltracker.SwipePanActivity"
             android:label="@string/title_activity_open_cvcamera"
             android:screenOrientation="landscape"
             android:theme="@android:style/Theme.NoTitleBar.Fullscreen" >
         </activity>
         <activity
-            android:name="edu.berkeley.cellscope.cscore.celltracker.StageCameraActivity"
+            android:name=".celltracker.StageCameraActivity"
             android:label="@string/title_activity_open_cvcamera"
             android:screenOrientation="landscape"
             android:theme="@android:style/Theme.NoTitleBar.Fullscreen" >
+        </activity>
+
+        <service
+            android:name="com.redbear.bleframework.RBLService"
+            android:enabled="true" >
+        </service>
+
+        <activity
+            android:name="edu.berkeley.cellscope.cscore.bluetoothle.BluetoothLeTestActivity"
+            android:label="@string/title_activity_bluetooth_le_test" >
         </activity>
     </application>
 

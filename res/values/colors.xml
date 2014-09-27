@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    
+    <item name="device_dialog_list_divider" type="color">#666</item>
+    <item name="device_dialog_text" type="color">#fff</item>
+    
+</resources>

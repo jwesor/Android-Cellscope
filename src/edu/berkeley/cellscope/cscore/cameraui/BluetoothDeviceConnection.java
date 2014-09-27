@@ -13,6 +13,11 @@ import edu.berkeley.cellscope.cscore.R;
 import edu.berkeley.cellscope.cscore.bluetooth.BluetoothSerialService;
 import edu.berkeley.cellscope.cscore.bluetooth.DeviceListActivity;
 
+/**
+ *  Handles user interface for enabling bluetooth and connecting to devices,
+ *  as well as providing a simple interface for communication with the device
+ *  via BluetoothSerialService
+ */
 public class BluetoothDeviceConnection implements DeviceConnection {
 	private Activity activity;
 	private DeviceConnectable connectable;
@@ -114,13 +119,13 @@ public class BluetoothDeviceConnection implements DeviceConnection {
 		}
 	}
 
-	public void stopConnection() {
+	public void disconnectFromDevice() {
 		if (mSerialService != null) {
 			mSerialService.stop();
 		}
 	}
 
-	public void startConnection() {
+	public void connectToDevice() {
 		proceedWithConnection = true;
 		if (getConnectionState() == BluetoothSerialService.STATE_NONE) {
 			if (!mEnablingBT) { // If we are turning on the BT we cannot check if it's enable
@@ -196,7 +201,7 @@ public class BluetoothDeviceConnection implements DeviceConnection {
 		return mSerialService.getState();
 	}
 
-	public boolean isEnabled() {
+	public boolean isConnectedToDevice() {
 		return bluetoothEnabled;
 	}
 
@@ -211,5 +216,9 @@ public class BluetoothDeviceConnection implements DeviceConnection {
 		if (mConnectedDeviceName == null)
 			return "";
 		return mConnectedDeviceName;
+	}
+
+	public String getDeviceAddress() {
+		return "";
 	}
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.redbear.simplecontrols;
+package com.redbear.bleframework;
 
 import java.util.UUID;
 
@@ -80,6 +80,7 @@ public class RBLService extends Service {
 			}
 		}
 
+		@Override
 		public void onReadRemoteRssi(BluetoothGatt gatt, int rssi, int status) {
 			if (status == BluetoothGatt.GATT_SUCCESS) {
 				broadcastUpdate(ACTION_GATT_RSSI, rssi);
@@ -140,7 +141,7 @@ public class RBLService extends Service {
 	}
 
 	public class LocalBinder extends Binder {
-		RBLService getService() {
+		public RBLService getService() {
 			return RBLService.this;
 		}
 	}
@@ -165,7 +166,7 @@ public class RBLService extends Service {
 
 	/**
 	 * Initializes a reference to the local Bluetooth adapter.
-	 * 
+	 *
 	 * @return Return true if the initialization is successful.
 	 */
 	public boolean initialize() {
@@ -191,10 +192,10 @@ public class RBLService extends Service {
 
 	/**
 	 * Connects to the GATT server hosted on the Bluetooth LE device.
-	 * 
+	 *
 	 * @param address
 	 *            The device address of the destination device.
-	 * 
+	 *
 	 * @return Return true if the connection is initiated successfully. The
 	 *         connection result is reported asynchronously through the
 	 *         {@code BluetoothGattCallback#onConnectionStateChange(android.bluetooth.BluetoothGatt, int, int)}
@@ -213,11 +214,10 @@ public class RBLService extends Service {
 				&& mBluetoothGatt != null) {
 			Log.d(TAG,
 					"Trying to use an existing mBluetoothGatt for connection.");
-			if (mBluetoothGatt.connect()) {
+			if (mBluetoothGatt.connect())
 				return true;
-			} else {
+			else
 				return false;
-			}
 		}
 
 		final BluetoothDevice device = mBluetoothAdapter
@@ -255,9 +255,8 @@ public class RBLService extends Service {
 	 * resources are released properly.
 	 */
 	public void close() {
-		if (mBluetoothGatt == null) {
+		if (mBluetoothGatt == null)
 			return;
-		}
 		mBluetoothGatt.close();
 		mBluetoothGatt = null;
 	}
@@ -267,7 +266,7 @@ public class RBLService extends Service {
 	 * result is reported asynchronously through the
 	 * {@code BluetoothGattCallback#onCharacteristicRead(android.bluetooth.BluetoothGatt, android.bluetooth.BluetoothGattCharacteristic, int)}
 	 * callback.
-	 * 
+	 *
 	 * @param characteristic
 	 *            The characteristic to read from.
 	 */
@@ -300,7 +299,7 @@ public class RBLService extends Service {
 
 	/**
 	 * Enables or disables notification on a give characteristic.
-	 * 
+	 *
 	 * @param characteristic
 	 *            Characteristic to act on.
 	 * @param enabled
@@ -319,7 +318,7 @@ public class RBLService extends Service {
 					.getDescriptor(UUID
 							.fromString(RBLGattAttributes.CLIENT_CHARACTERISTIC_CONFIG));
 			descriptor
-					.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+			.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
 			mBluetoothGatt.writeDescriptor(descriptor);
 		}
 	}

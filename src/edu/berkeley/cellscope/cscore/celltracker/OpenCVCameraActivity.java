@@ -171,7 +171,7 @@ public class OpenCVCameraActivity extends Activity implements CvCameraViewListen
 		if (cameraView != null) {
 			cameraView.disableView();
 		}
-		btConnector.stopConnection();
+		btConnector.disconnectFromDevice();
 	}
 
 	public void deviceUnavailable() {
@@ -349,7 +349,7 @@ public class OpenCVCameraActivity extends Activity implements CvCameraViewListen
 		int id = item.getItemId();
 		if (id == R.id.connect) {
 			maintainCamera = true;
-			btConnector.startConnection();
+			btConnector.connectToDevice();
 			return true;
 		} else if (id == R.id.menu_pinch) {
 			maintainCamera = true;
@@ -417,6 +417,6 @@ public class OpenCVCameraActivity extends Activity implements CvCameraViewListen
 	}
 
 	public boolean isReadyForWrite() {
-		return btConnector.isEnabled();
+		return btConnector.isConnectedToDevice();
 	}
 }

@@ -32,21 +32,22 @@
     <string name="alert_dialog_yes">Yes</string>
     <string name="alert_dialog_no">No</string>
     <string name="alert_dialog_warning_title">Warning</string>
-    <string name="alert_dialog_ok">Ok</string>
+    <string name="alert_dialog_ok">OK</string>
     <string name="alert_dialog_turn_on_bt">This application needs the Bluetooth. Do you want turn on?</string>
     <string name="not_connected">You are not connected to a device</string>
-    <string name="title_connecting">connecting...</string>
+    <string name="title_connecting">connecting#8230</string>
     <string name="title_connected_to">connected: </string>
     <string name="title_not_connected">not connected</string>
 
     <!-- DeviceListActivity -->
-    <string name="scanning">scanning for devices...</string>
+    <string name="device_dialog_scanning">Scanning for devices&#8230;</string>
     <string name="select_device">select a device to connect</string>
     <string name="none_paired">No devices have been paired</string>
     <string name="none_found">No devices found</string>
     <string name="title_paired_devices">Paired Devices</string>
     <string name="title_other_devices">Other Available Devices</string>
-    <string name="button_scan">Scan for devices</string>
+    <string name="device_dialog_scan">Scan for devices</string>
+    <string name="device_dialog_title">Devices</string>
 
     <!-- Options Menu -->
     <string name="connect">Connect device</string>
@@ -100,5 +101,6 @@
     <string name="title_activity_viewfield">Field of View</string>
     <string name="title_activity_tracker_settings">Cell Tracking Options</string>
     <string name="title_activity_navigation">NavigationActivity</string>
+    <string name="title_activity_bluetooth_le_test">BluetoothLeTestActivity</string>
 
 </resources>

@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import edu.berkeley.cellscope.cscore.bluetooth.BluetoothActivity;
+import edu.berkeley.cellscope.cscore.bluetoothle.BluetoothLeTestActivity;
 import edu.berkeley.cellscope.cscore.celltracker.OpenCVCameraActivity;
 import edu.berkeley.cellscope.cscore.celltracker.PanTrackActivity;
 import edu.berkeley.cellscope.cscore.celltracker.StageCameraActivity;
@@ -83,6 +84,11 @@ public class MenuActivity extends Activity {
 
 	public void goToStageCam(View v) {
 		Intent intent = new Intent(this, StageCameraActivity.class);
+		startActivity(intent);
+	}
+
+	public void goToBluetoothTest(View v) {
+		Intent intent = new Intent(this, BluetoothLeTestActivity.class);
 		startActivity(intent);
 	}
 }

@@ -7,5 +7,7 @@
     <dimen name="thumbnail_size">64dp</dimen>
     <dimen name="activity_horizontal_margin">16dp</dimen>
     <dimen name="activity_vertical_margin">16dp</dimen>
-
+    <dimen name="text_dialog_title">18sp</dimen>
+    <dimen name="text_dialog_content">16sp</dimen>
+	<dimen name="device_dialog_list_divider">2dp</dimen>
 </resources>
